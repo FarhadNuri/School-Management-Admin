@@ -1,10 +1,10 @@
-School Management Admin Portal
+## School Management Admin Portal
 
 A modern, high-performance administrative web application designed for higher education institutions. Built with **React 19**, **Vite**, and **TanStack Query**, featuring a tailored design system with full dark/light theme support.
 
 ---
 
-## ✨ Features
+## Features
 
 - **Executive Dashboard**: Real-time KPI stat cards, fee collection trend charts, class size capacity bars, and gender distribution donuts.
 - **Student & Guardian Management**: Complete student records, profile details, document uploads (IDs, photos), and a multi-step student enrollment wizard with guardian linking.
@@ -16,7 +16,7 @@ A modern, high-performance administrative web application designed for higher ed
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technologies |
 | :--- | :--- |
@@ -28,7 +28,7 @@ A modern, high-performance administrative web application designed for higher ed
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js (v18+ recommended)
@@ -65,7 +65,7 @@ A modern, high-performance administrative web application designed for higher ed
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 src/
@@ -82,7 +82,7 @@ src/
 
 ---
 
-## 📜 Available Scripts
+## Available Scripts
 
 - `npm run dev` — Starts local development server with HMR.
 - `npm run build` — Bundles production assets.
@@ -90,6 +90,3 @@ src/
 - `npm run preview` — Previews the production build locally.
 
 ---
-
-## 📄 License
-This project is licensed under the MIT License.
