@@ -1,3 +1,5 @@
+import { resolvePhoto } from './helpers';
+
 export function adaptCourse(raw = {}) {
   const teachers = raw.courseTeachers || [];
   const students = raw.courseStudents || [];
@@ -22,7 +24,11 @@ export function adaptCourse(raw = {}) {
     status: raw.courseStatus || 'Active',
     isActive: raw.courseStatus === 'Active',
     description: raw.courseDescription || '—',
+    coverImage: resolvePhoto(raw.coverImage || raw.image),
+    image: resolvePhoto(raw.coverImage || raw.image),
     class: classItem.className || '—',
+    className: classItem.className || '—',
+    grade: String(classItem.grade || ''),
     classId: classItem._id ? String(classItem._id) : '',
     teacher: teacherNames || 'No teacher assigned',
     teachers,
