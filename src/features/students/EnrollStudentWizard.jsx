@@ -10,17 +10,20 @@ import {
 } from '../../components/ui';
 import { useCreateStudent, useUpdateStudent, useClasses, useGuardians } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
+import { formatBdPhone } from '../../api/adapters/helpers';
 
 const STEPS = ['IDENTITY', 'SCHOOL', 'CONTACT', 'FAMILY', 'ADDRESS'];
 
-const ID_TYPES_LIST = [
-  'National ID Card',
-  'Passport',
-  'Birth Certificate',
-  'Student ID',
-  'Driver License',
-  'Voter ID',
-];
+const STUDENT_ID_TYPES = ['Birth Certificate'];
+const GUARDIAN_ID_TYPES = ['National ID Card', 'Birth Certificate'];
+
+const getMaxStudentDob = () => {
+  const d = new Date();
+  const y = d.getFullYear() - 10;
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
   const isEdit = Boolean(initialData?.id);
@@ -39,34 +42,36 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
   const debouncedGuardianSearch = useDebounce(guardianSearch, 400);
   const { data: guardianSearchResults } = useGuardians({ search: debouncedGuardianSearch });
   const [isGuardianSelected, setIsGuardianSelected] = useState(false);
+  const [selectedGuardian, setSelectedGuardian] = useState(null);
 
   const [form, setForm] = useState({
+    existingGuardianId: '',
     firstName: '',
     lastName: '',
     email: '',
     dateOfBirth: '',
     gender: 'female',
-    emergencyContact: '',
+    emergencyContact: '+88',
     classId: '',
-    idType: 'Passport',
-    phone: '',
-    altPhone: '',
-    whatsapp: '',
+    idType: 'Birth Certificate',
+    phone: '+88',
+    altPhone: '+88',
+    whatsapp: '+88',
     guardianFullName: '',
     guardianEmail: '',
-    guardianPhone: '',
-    guardianIdType: 'Passport',
+    guardianPhone: '+88',
+    guardianIdType: 'National ID Card',
     street: '',
     city: '',
     region: '',
     postalCode: '',
-    country: 'Ghana',
+    country: 'Bangladesh',
     sameAsStudentAddress: true,
     guardianStreet: '',
     guardianCity: '',
     guardianRegion: '',
     guardianPostalCode: '',
-    guardianCountry: 'Ghana',
+    guardianCountry: 'Bangladesh',
   });
 
   const [files, setFiles] = useState({
@@ -86,64 +91,68 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
       const gu = g.user || {};
 
       setForm({
+        existingGuardianId: g._id || g.id || '',
         firstName: u.firstName || '',
         lastName: u.lastName || '',
         email: u.email || '',
         dateOfBirth: u.dateOfBirth ? String(u.dateOfBirth).slice(0, 10) : '',
-        gender: u.gender || 'female',
-        emergencyContact: raw.emergencyContact || '',
+        gender: u.gender === 'male' ? 'male' : 'female',
+        emergencyContact: raw.emergencyContact && raw.emergencyContact !== '—' ? formatBdPhone(raw.emergencyContact) : '+88',
         classId: raw.class?._id || raw.class || '',
-        idType: raw.idType || 'Passport',
-        phone: u.contactInfo?.phone || '',
-        altPhone: u.contactInfo?.altPhone || '',
-        whatsapp: u.contactInfo?.whatsapp || '',
+        idType: 'Birth Certificate',
+        phone: u.contactInfo?.phone && u.contactInfo?.phone !== '—' ? formatBdPhone(u.contactInfo.phone) : '+88',
+        altPhone: u.contactInfo?.altPhone && u.contactInfo?.altPhone !== '—' ? formatBdPhone(u.contactInfo.altPhone) : '+88',
+        whatsapp: u.contactInfo?.whatsapp && u.contactInfo?.whatsapp !== '—' ? formatBdPhone(u.contactInfo.whatsapp) : '+88',
         guardianFullName: `${gu.firstName || ''} ${gu.lastName || ''}`.trim(),
         guardianEmail: gu.email || '',
-        guardianPhone: gu.contactInfo?.phone || '',
-        guardianIdType: g.idType || 'Passport',
+        guardianPhone: gu.contactInfo?.phone && gu.contactInfo?.phone !== '—' ? formatBdPhone(gu.contactInfo.phone) : '+88',
+        guardianIdType: g.idType && g.idType.includes('Birth') ? 'Birth Certificate' : 'National ID Card',
         street: u.address?.street || '',
         city: u.address?.city || '',
         region: u.address?.state || '',
         postalCode: u.address?.zip || '',
-        country: u.address?.country || 'Ghana',
+        country: u.address?.country || 'Bangladesh',
         sameAsStudentAddress: true,
         guardianStreet: gu.address?.street || '',
         guardianCity: gu.address?.city || '',
         guardianRegion: gu.address?.state || '',
         guardianPostalCode: gu.address?.zip || '',
-        guardianCountry: gu.address?.country || 'Ghana',
+        guardianCountry: gu.address?.country || 'Bangladesh',
       });
-      setIsGuardianSelected(true);
+      setIsGuardianSelected(Boolean(g._id || g.id));
+      setSelectedGuardian(raw.guardian || null);
     } else {
       setForm({
+        existingGuardianId: '',
         firstName: '',
         lastName: '',
         email: '',
         dateOfBirth: '',
         gender: 'female',
-        emergencyContact: '',
+        emergencyContact: '+88',
         classId: '',
-        idType: 'Passport',
-        phone: '',
-        altPhone: '',
-        whatsapp: '',
+        idType: 'Birth Certificate',
+        phone: '+88',
+        altPhone: '+88',
+        whatsapp: '+88',
         guardianFullName: '',
         guardianEmail: '',
-        guardianPhone: '',
-        guardianIdType: 'Passport',
+        guardianPhone: '+88',
+        guardianIdType: 'National ID Card',
         street: '',
         city: '',
         region: '',
         postalCode: '',
-        country: 'Ghana',
+        country: 'Bangladesh',
         sameAsStudentAddress: true,
         guardianStreet: '',
         guardianCity: '',
         guardianRegion: '',
         guardianPostalCode: '',
-        guardianCountry: 'Ghana',
+        guardianCountry: 'Bangladesh',
       });
       setIsGuardianSelected(false);
+      setSelectedGuardian(null);
     }
     setFiles({
       photo: null,
@@ -158,6 +167,99 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
   }, [initialData, isOpen]);
 
   const updateField = (field, val) => {
+    // When typing phone number, automatically mirror to whatsapp
+    if (field === 'phone') {
+      const formatted = formatBdPhone(val);
+      setForm((prev) => ({
+        ...prev,
+        phone: formatted,
+        whatsapp: formatted,
+      }));
+      if (errors.phone || errors.whatsapp) {
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy.phone;
+          delete copy.whatsapp;
+          return copy;
+        });
+      }
+      return;
+    }
+
+    if (['emergencyContact', 'altPhone', 'whatsapp', 'guardianPhone'].includes(field)) {
+      const formatted = formatBdPhone(val);
+      setForm((prev) => ({ ...prev, [field]: formatted }));
+      if (errors[field]) {
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy[field];
+          return copy;
+        });
+      }
+      return;
+    }
+
+    // When updating address fields, keep guardian address in sync if same address is selected
+    if (['street', 'city', 'region', 'postalCode', 'country'].includes(field)) {
+      setForm((prev) => {
+        const updated = { ...prev, [field]: val };
+        if (prev.sameAsStudentAddress) {
+          if (field === 'street') updated.guardianStreet = val;
+          if (field === 'city') updated.guardianCity = val;
+          if (field === 'region') updated.guardianRegion = val;
+          if (field === 'postalCode') updated.guardianPostalCode = val;
+          if (field === 'country') updated.guardianCountry = val;
+        }
+        return updated;
+      });
+      if (errors[field]) {
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy[field];
+          return copy;
+        });
+      }
+      return;
+    }
+
+    // Toggle same address
+    if (field === 'sameAsStudentAddress') {
+      setForm((prev) => {
+        const checked = Boolean(val);
+        if (checked) {
+          const hasStudentAddress = Boolean(prev.street || prev.city || prev.region || prev.postalCode);
+          const hasGuardianAddress = Boolean(prev.guardianStreet || prev.guardianCity || prev.guardianRegion || prev.guardianPostalCode);
+
+          if (hasGuardianAddress && !hasStudentAddress) {
+            return {
+              ...prev,
+              sameAsStudentAddress: true,
+              street: prev.guardianStreet,
+              city: prev.guardianCity,
+              region: prev.guardianRegion,
+              postalCode: prev.guardianPostalCode,
+              country: prev.guardianCountry || 'Bangladesh',
+            };
+          } else {
+            return {
+              ...prev,
+              sameAsStudentAddress: true,
+              guardianStreet: prev.street,
+              guardianCity: prev.city,
+              guardianRegion: prev.region,
+              guardianPostalCode: prev.postalCode,
+              guardianCountry: prev.country || 'Bangladesh',
+            };
+          }
+        }
+        return {
+          ...prev,
+          sameAsStudentAddress: false,
+        };
+      });
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [field]: val }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -180,18 +282,101 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
   };
 
   const selectExistingGuardian = (g) => {
-    setForm((prev) => ({
-      ...prev,
-      guardianFullName: g.name,
-      guardianEmail: g.email !== '—' ? g.email : '',
-      guardianPhone: g.phone !== '—' ? g.phone : '',
-      guardianIdType: g.idType !== '—' ? g.idType : 'Passport',
-      guardianStreet: g.street !== '—' ? g.street : '',
-      guardianCity: g.city !== '—' ? g.city.split(',')[0].trim() : '',
-      guardianCountry: g.country !== '—' ? g.country : 'Ghana',
-    }));
+    const rawUser = g.rawGuardian?.user || {};
+    const rawGuardian = g.rawGuardian || {};
+    const rawAddress = rawUser.address || g.address || {};
+    const rawContact = rawUser.contactInfo || g.contactInfo || {};
+
+    const fullName = (
+      (g.name && g.name !== '—' ? g.name : '') ||
+      `${rawUser.firstName || ''} ${rawUser.lastName || ''}`.trim() ||
+      `${g.firstName || ''} ${g.lastName || ''}`.trim()
+    );
+
+    const email = (g.email && g.email !== '—' ? g.email : rawUser.email) || '';
+    const phone = (g.phone && g.phone !== '—' ? g.phone : rawContact.phone) || '';
+    const formattedPhone = phone ? formatBdPhone(phone) : '+88';
+
+    let idType = (g.idType && g.idType !== '—' ? g.idType : rawGuardian.idType) || 'National ID Card';
+    if (!GUARDIAN_ID_TYPES.includes(idType)) {
+      if (idType.toLowerCase().includes('birth')) {
+        idType = 'Birth Certificate';
+      } else {
+        idType = 'National ID Card';
+      }
+    }
+
+    const street = (g.street && g.street !== '—' ? g.street : rawAddress.street) || '';
+    const city = rawAddress.city || (g.city && g.city !== '—' ? g.city.split(',')[0].trim() : '');
+    const region = (g.state && g.state !== '—' ? g.state : rawAddress.state) || '';
+    const postalCode = (g.zip && g.zip !== '—' ? g.zip : rawAddress.zip) || '';
+    const country = (g.country && g.country !== '—' ? g.country : rawAddress.country) || 'Bangladesh';
+
+    setSelectedGuardian(g);
     setIsGuardianSelected(true);
     setGuardianSearch('');
+
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        existingGuardianId: String(g.id || rawGuardian._id || ''),
+        guardianFullName: fullName,
+        guardianEmail: email,
+        guardianPhone: formattedPhone,
+        guardianIdType: idType,
+        guardianStreet: street,
+        guardianCity: city,
+        guardianRegion: region,
+        guardianPostalCode: postalCode,
+        guardianCountry: country,
+      };
+
+      // In address, if same address for guardian is selected, fetch those into the student boxes
+      if (prev.sameAsStudentAddress) {
+        if (street) next.street = street;
+        if (city) next.city = city;
+        if (region) next.region = region;
+        if (postalCode) next.postalCode = postalCode;
+        if (country) next.country = country;
+      }
+
+      return next;
+    });
+
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.guardianFullName;
+      delete copy.guardianEmail;
+      delete copy.guardianPhone;
+      delete copy.guardianPhoto;
+      delete copy.guardianIdFront;
+      delete copy.guardianIdBack;
+      if (street) delete copy.street;
+      if (city) delete copy.city;
+      if (region) delete copy.region;
+      if (postalCode) delete copy.postalCode;
+      if (country) delete copy.country;
+      return copy;
+    });
+  };
+
+  const handleClearSelectedGuardian = () => {
+    setSelectedGuardian(null);
+    setIsGuardianSelected(false);
+    setGuardianSearch('');
+    setForm((prev) => ({
+      ...prev,
+      existingGuardianId: '',
+      guardianFullName: '',
+      guardianEmail: '',
+      guardianPhone: '+88',
+      guardianIdType: 'National ID Card',
+      guardianStreet: '',
+      guardianCity: '',
+      guardianRegion: '',
+      guardianPostalCode: '',
+      guardianCountry: 'Bangladesh',
+    }));
   };
 
   const validateStep = (step) => {
@@ -201,16 +386,30 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
       if (!isEdit && !files.photo) errs.photo = 'Profile photo is required';
       if (!form.firstName.trim()) errs.firstName = 'First name is required';
       if (!form.lastName.trim()) errs.lastName = 'Last name is required';
-      if (!form.dateOfBirth) errs.dateOfBirth = 'Date of birth is required';
-      if (!form.emergencyContact.trim()) errs.emergencyContact = 'Emergency contact is required';
+      if (!form.dateOfBirth) {
+        errs.dateOfBirth = 'Date of birth is required';
+      } else {
+        const dob = new Date(form.dateOfBirth);
+        const maxDate = new Date();
+        maxDate.setFullYear(maxDate.getFullYear() - 10);
+        maxDate.setHours(23, 59, 59, 999);
+        if (isNaN(dob.getTime())) {
+          errs.dateOfBirth = 'Please enter a valid date of birth';
+        } else if (dob > maxDate) {
+          errs.dateOfBirth = 'Student must be at least 10 years old';
+        }
+      }
+      const emDigits = form.emergencyContact ? form.emergencyContact.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (!emDigits) {
+        errs.emergencyContact = 'Emergency contact is required';
+      } else if (emDigits.length !== 11) {
+        errs.emergencyContact = 'Emergency contact must have exactly 11 digits (+88 + 11 digits)';
+      }
     } else if (step === 1) {
       if (!form.classId) errs.classId = 'Class / Grade selection is required';
       if (!form.idType) errs.idType = 'ID type is required';
       if (!isEdit) {
-        if (!files.idFront) errs.idFront = 'ID front document is required';
-        if (form.idType !== 'Passport' && !files.idBack) {
-          errs.idBack = 'ID back document is required';
-        }
+        if (!files.idFront) errs.idFront = 'Birth certificate scan is required';
       }
     } else if (step === 2) {
       if (!form.email.trim()) {
@@ -218,7 +417,21 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
       } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
         errs.email = 'Please enter a valid email address';
       }
+      const phDigits = form.phone ? form.phone.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (phDigits && phDigits.length !== 11) {
+        errs.phone = 'Phone number must have exactly 11 digits (+88 + 11 digits)';
+      }
+      const altDigits = form.altPhone ? form.altPhone.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (altDigits && altDigits.length !== 11) {
+        errs.altPhone = 'Other phone must have exactly 11 digits (+88 + 11 digits)';
+      }
+      const waDigits = form.whatsapp ? form.whatsapp.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (waDigits && waDigits.length !== 11) {
+        errs.whatsapp = 'WhatsApp must have exactly 11 digits (+88 + 11 digits)';
+      }
     } else if (step === 3) {
+      const isExistingGuardian = Boolean(form.existingGuardianId || selectedGuardian);
+
       const parts = form.guardianFullName.trim().split(' ');
       if (!form.guardianFullName.trim()) {
         errs.guardianFullName = 'Guardian full name is required';
@@ -232,19 +445,24 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
         errs.guardianEmail = 'Valid guardian email is required';
       }
 
-      if (!form.guardianPhone.trim()) {
+      const gPhDigits = form.guardianPhone ? form.guardianPhone.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (!gPhDigits) {
         errs.guardianPhone = 'Guardian phone is required';
+      } else if (gPhDigits.length !== 11) {
+        errs.guardianPhone = 'Guardian phone must have exactly 11 digits (+88 + 11 digits)';
       }
 
-      if (!isEdit && !files.guardianPhoto && !initialData?.guardianPhoto) {
+      // Existing guardian already has photo & IDs on file
+      if (!isEdit && !isExistingGuardian && !files.guardianPhoto && !initialData?.guardianPhoto) {
         errs.guardianPhoto = 'Guardian photo is required';
       }
 
-      if (!isEdit) {
+      if (!isEdit && !isExistingGuardian) {
         if (!files.guardianIdFront && !initialData?.guardianIdFront) {
           errs.guardianIdFront = 'Guardian ID front document is required';
         }
-        if (form.guardianIdType !== 'Passport' && !files.guardianIdBack && !initialData?.guardianIdBack) {
+        const isGuardianSingleSided = form.guardianIdType === 'Birth Certificate' || form.guardianIdType === 'Passport';
+        if (!isGuardianSingleSided && !files.guardianIdBack && !initialData?.guardianIdBack) {
           errs.guardianIdBack = 'Guardian ID back document is required';
         }
       }
@@ -308,9 +526,9 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
       classId: form.classId,
       idType: form.idType,
       contactInfo: {
-        phone: form.phone.trim(),
-        altPhone: form.altPhone.trim(),
-        whatsapp: form.whatsapp.trim(),
+        phone: form.phone && form.phone !== '+88' ? form.phone.trim() : '',
+        altPhone: form.altPhone && form.altPhone !== '+88' ? form.altPhone.trim() : '',
+        whatsapp: form.whatsapp && form.whatsapp !== '+88' ? form.whatsapp.trim() : '',
       },
       address: studentAddress,
       sameAsStudentAddress: String(form.sameAsStudentAddress),
@@ -326,6 +544,10 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
       },
       ...files,
     };
+
+    if (form.existingGuardianId) {
+      payload.existingGuardianId = form.existingGuardianId;
+    }
 
     try {
       if (isEdit) {
@@ -397,6 +619,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
               <FormField
                 label="DATE OF BIRTH *"
                 type="date"
+                max={getMaxStudentDob()}
                 value={form.dateOfBirth}
                 onChange={(v) => updateField('dateOfBirth', v)}
               />
@@ -405,8 +628,9 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="EMERGENCY CONTACT *"
-                placeholder="+233 ..."
+                placeholder="+88017XXXXXXXX"
                 value={form.emergencyContact}
+                maxLength={14}
                 onChange={(v) => updateField('emergencyContact', v)}
               />
               <FieldError error={errors.emergencyContact} />
@@ -415,7 +639,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
 
           <OptionGroup
             label="GENDER"
-            options={['Female', 'Male', 'Other']}
+            options={['Female', 'Male']}
             value={form.gender.charAt(0).toUpperCase() + form.gender.slice(1)}
             onChange={(v) => updateField('gender', v.toLowerCase())}
           />
@@ -446,75 +670,57 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
                 as="select"
                 value={form.idType}
                 onChange={(v) => updateField('idType', v)}
-                options={ID_TYPES_LIST}
+                options={STUDENT_ID_TYPES}
               />
               <FieldError error={errors.idType} />
             </div>
           </div>
 
-          {form.idType === 'Passport' ? (
-            <FileInput
-              label="PASSPORT PAGE (ID FRONT) *"
-              file={files.idFront}
-              existingUrl={initialData?.idFront}
-              onChange={(f) => updateFile('idFront', f)}
-              title="Passport page"
-              hint="Clear scan preferred"
-              error={errors.idFront}
-            />
-          ) : (
-            <div className="row">
-              <div style={{ flex: 1 }}>
-                <FileInput
-                  label="ID FRONT DOCUMENT *"
-                  file={files.idFront}
-                  existingUrl={initialData?.idFront}
-                  onChange={(f) => updateFile('idFront', f)}
-                  title="Upload ID Front"
-                  hint="Clear scan preferred"
-                  error={errors.idFront}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <FileInput
-                  label="ID BACK DOCUMENT *"
-                  file={files.idBack}
-                  existingUrl={initialData?.idBack}
-                  onChange={(f) => updateFile('idBack', f)}
-                  title="Upload ID Back"
-                  hint="Clear scan preferred"
-                  error={errors.idBack}
-                />
-              </div>
-            </div>
-          )}
+          <FileInput
+            label="BIRTH CERTIFICATE (SCAN) *"
+            file={files.idFront}
+            existingUrl={initialData?.idFront}
+            onChange={(f) => updateFile('idFront', f)}
+            title="Birth certificate scan"
+            hint="Clear scan preferred"
+            error={errors.idFront}
+          />
         </>
       )}
 
       {currentStep === 2 && (
         <>
           <div className="row">
-            <FormField
-              label="PHONE"
-              placeholder="+233 ..."
-              value={form.phone}
-              onChange={(v) => updateField('phone', v)}
-              style={{ flex: 1 }}
-            />
-            <FormField
-              label="OTHER PHONE"
-              placeholder="+233 ..."
-              value={form.altPhone}
-              onChange={(v) => updateField('altPhone', v)}
-              style={{ flex: 1 }}
-            />
+            <div style={{ flex: 1 }}>
+              <FormField
+                label="PHONE"
+                placeholder="+88017XXXXXXXX"
+                value={form.phone}
+                maxLength={14}
+                onChange={(v) => updateField('phone', v)}
+              />
+              <FieldError error={errors.phone} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <FormField
+                label="OTHER PHONE"
+                placeholder="+88017XXXXXXXX"
+                value={form.altPhone}
+                maxLength={14}
+                onChange={(v) => updateField('altPhone', v)}
+              />
+              <FieldError error={errors.altPhone} />
+            </div>
           </div>
+
           <FormField
             label="WHATSAPP"
-            placeholder="Number or username"
+            placeholder="+88017XXXXXXXX"
             value={form.whatsapp}
+            maxLength={14}
             onChange={(v) => updateField('whatsapp', v)}
           />
+          <FieldError error={errors.whatsapp} />
           <div>
             <FormField
               label="EMAIL *"
@@ -530,57 +736,103 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
 
       {currentStep === 3 && (
         <>
-          <div style={{ position: 'relative' }}>
-            <FormField
-              label="SEARCH EXISTING GUARDIAN"
-              placeholder="Search by name, email, or phone..."
-              value={guardianSearch}
-              onChange={(v) => {
-                setGuardianSearch(v);
-                setIsGuardianSelected(false);
+          {isGuardianSelected && selectedGuardian ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                background: 'rgba(12, 107, 89, 0.08)',
+                border: '1px solid rgba(12, 107, 89, 0.25)',
+                borderRadius: '12px',
+                marginBottom: '12px',
               }}
-            />
-            {guardianSearch && guardianSearchResults?.guardians?.length > 0 && (
-              <div
+            >
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--brand)' }}>
+                  ✓ Existing Guardian Selected
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--mute)', marginTop: '2px' }}>
+                  {form.guardianFullName} · {form.guardianEmail}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearSelectedGuardian}
                 style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: 'var(--card)',
+                  background: 'transparent',
                   border: '1px solid var(--line)',
-                  borderRadius: '14px',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                  zIndex: 10,
-                  maxHeight: '180px',
-                  overflowY: 'auto',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  color: 'var(--ink)',
                 }}
               >
-                {guardianSearchResults.guardians.map((g) => (
-                  <div
-                    key={g.id}
-                    onClick={() => selectExistingGuardian(g)}
-                    style={{
-                      padding: '10px 14px',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--line)',
-                      fontSize: '13px',
-                    }}
-                  >
-                    <b>{g.name}</b> · <span style={{ color: 'var(--mute)' }}>{g.email}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                Change Guardian
+              </button>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <FormField
+                label="SEARCH EXISTING GUARDIAN"
+                placeholder="Search by name, email, or phone..."
+                value={guardianSearch}
+                onChange={(v) => {
+                  setGuardianSearch(v);
+                  setIsGuardianSelected(false);
+                }}
+              />
+              {guardianSearch && guardianSearchResults?.guardians?.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'var(--card)',
+                    border: '1px solid var(--line)',
+                    borderRadius: '14px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                    zIndex: 10,
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {guardianSearchResults.guardians.map((g) => (
+                    <div
+                      key={g.id}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        selectExistingGuardian(g);
+                      }}
+                      onClick={() => selectExistingGuardian(g)}
+                      style={{
+                        padding: '10px 14px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--line)',
+                        fontSize: '13px',
+                      }}
+                    >
+                      <b>{g.name}</b> · <span style={{ color: 'var(--mute)' }}>{g.email}</span>
+                      {g.phone && g.phone !== '—' && (
+                        <span style={{ color: 'var(--mute)', marginLeft: '6px' }}>({g.phone})</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <FileInput
-            label="GUARDIAN PHOTO *"
+            label={isGuardianSelected ? "GUARDIAN PHOTO (ON FILE)" : "GUARDIAN PHOTO *"}
             file={files.guardianPhoto}
-            existingUrl={initialData?.guardianPhoto}
+            existingUrl={selectedGuardian?.photo || initialData?.guardianPhoto}
             onChange={(f) => updateFile('guardianPhoto', f)}
-            title="Guardian photo"
-            hint="Tap to upload"
+            title={isGuardianSelected ? "Guardian photo on file" : "Guardian photo"}
+            hint={isGuardianSelected ? "Existing photo loaded · Click to upload new" : "Tap to upload"}
             error={errors.guardianPhoto}
           />
 
@@ -606,9 +858,10 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="PHONE *"
-                placeholder="+233 ..."
+                placeholder="+88017XXXXXXXX"
                 value={form.guardianPhone}
                 disabled={isGuardianSelected}
+                maxLength={14}
                 onChange={(v) => updateField('guardianPhone', v)}
               />
               <FieldError error={errors.guardianPhone} />
@@ -630,39 +883,42 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             label="GUARDIAN ID TYPE"
             as="select"
             value={form.guardianIdType}
+            disabled={isGuardianSelected}
             onChange={(v) => updateField('guardianIdType', v)}
-            options={ID_TYPES_LIST}
+            options={GUARDIAN_ID_TYPES}
           />
 
-          {form.guardianIdType === 'Passport' ? (
+          {form.guardianIdType === 'Birth Certificate' ? (
             <FileInput
-              label="GUARDIAN PASSPORT PAGE *"
+              label={isGuardianSelected ? "GUARDIAN BIRTH CERTIFICATE (ON FILE)" : "GUARDIAN BIRTH CERTIFICATE *"}
               file={files.guardianIdFront}
-              existingUrl={initialData?.guardianIdFront}
+              existingUrl={selectedGuardian?.idFront || initialData?.guardianIdFront}
               onChange={(f) => updateFile('guardianIdFront', f)}
-              title="Guardian Passport page"
-              hint="Clear scan preferred"
+              title={isGuardianSelected ? "Birth certificate on file" : "Guardian Birth certificate"}
+              hint={isGuardianSelected ? "Existing scan loaded · Click to upload new" : "Clear scan preferred"}
               error={errors.guardianIdFront}
             />
           ) : (
             <div className="row">
               <div style={{ flex: 1 }}>
                 <FileInput
-                  label="GUARDIAN ID FRONT *"
+                  label={isGuardianSelected ? "GUARDIAN ID FRONT (ON FILE)" : "GUARDIAN ID FRONT *"}
                   file={files.guardianIdFront}
-                  existingUrl={initialData?.guardianIdFront}
+                  existingUrl={selectedGuardian?.idFront || initialData?.guardianIdFront}
                   onChange={(f) => updateFile('guardianIdFront', f)}
-                  title="Guardian ID Front"
+                  title={isGuardianSelected ? "ID Front on file" : "Guardian ID Front"}
+                  hint={isGuardianSelected ? "Existing scan loaded · Click to upload new" : "Clear scan preferred"}
                   error={errors.guardianIdFront}
                 />
               </div>
               <div style={{ flex: 1 }}>
                 <FileInput
-                  label="GUARDIAN ID BACK *"
+                  label={isGuardianSelected ? "GUARDIAN ID BACK (ON FILE)" : "GUARDIAN ID BACK *"}
                   file={files.guardianIdBack}
-                  existingUrl={initialData?.guardianIdBack}
+                  existingUrl={selectedGuardian?.idBack || initialData?.guardianIdBack}
                   onChange={(f) => updateFile('guardianIdBack', f)}
-                  title="Guardian ID Back"
+                  title={isGuardianSelected ? "ID Back on file" : "Guardian ID Back"}
+                  hint={isGuardianSelected ? "Existing scan loaded · Click to upload new" : "Clear scan preferred"}
                   error={errors.guardianIdBack}
                 />
               </div>
@@ -676,7 +932,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
           <div>
             <FormField
               label="STREET *"
-              placeholder="Street address"
+              placeholder="e.g. Sugandha"
               value={form.street}
               onChange={(v) => updateField('street', v)}
             />
@@ -687,7 +943,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="CITY *"
-                placeholder="City"
+                placeholder="e.g. Chattogram"
                 value={form.city}
                 onChange={(v) => updateField('city', v)}
               />
@@ -696,7 +952,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="REGION *"
-                placeholder="Region"
+                placeholder="e.g. Chattogram"
                 value={form.region}
                 onChange={(v) => updateField('region', v)}
               />
@@ -708,7 +964,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="POSTAL CODE *"
-                placeholder="Postal code"
+                placeholder="e.g. 4203"
                 value={form.postalCode}
                 onChange={(v) => updateField('postalCode', v)}
               />
@@ -717,7 +973,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="COUNTRY *"
-                placeholder="Country"
+                placeholder="e.g. Bangladesh"
                 value={form.country}
                 onChange={(v) => updateField('country', v)}
               />
@@ -740,7 +996,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
               <div>
                 <FormField
                   label="GUARDIAN STREET *"
-                  placeholder="Guardian street address"
+                  placeholder="e.g. Sugandha"
                   value={form.guardianStreet}
                   onChange={(v) => updateField('guardianStreet', v)}
                 />
@@ -751,7 +1007,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
                 <div style={{ flex: 1 }}>
                   <FormField
                     label="GUARDIAN CITY *"
-                    placeholder="City"
+                    placeholder="e.g. Chattogram"
                     value={form.guardianCity}
                     onChange={(v) => updateField('guardianCity', v)}
                   />
@@ -760,7 +1016,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
                 <div style={{ flex: 1 }}>
                   <FormField
                     label="GUARDIAN REGION *"
-                    placeholder="Region"
+                    placeholder="e.g. Chattogram"
                     value={form.guardianRegion}
                     onChange={(v) => updateField('guardianRegion', v)}
                   />
@@ -772,7 +1028,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
                 <div style={{ flex: 1 }}>
                   <FormField
                     label="GUARDIAN POSTAL CODE *"
-                    placeholder="Postal code"
+                    placeholder="e.g. 4203"
                     value={form.guardianPostalCode}
                     onChange={(v) => updateField('guardianPostalCode', v)}
                   />
@@ -781,7 +1037,7 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
                 <div style={{ flex: 1 }}>
                   <FormField
                     label="GUARDIAN COUNTRY *"
-                    placeholder="Country"
+                    placeholder="e.g. Bangladesh"
                     value={form.guardianCountry}
                     onChange={(v) => updateField('guardianCountry', v)}
                   />
