@@ -25,3 +25,4 @@ export { ConfirmModal } from './ConfirmModal';
 export { FieldError } from './FieldError';
 export { MultiSelectChips } from './MultiSelectChips';
 export { FileInput } from './FileInput';
+export { ClassImageTile } from './ClassImageTile';
