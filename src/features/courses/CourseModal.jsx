@@ -4,6 +4,7 @@ import {
   FormField,
   OptionGroup,
   MultiSelectChips,
+  FileInput,
   FieldError,
   useToast,
 } from '../../components/ui';
@@ -31,6 +32,7 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
     courseTeachers: [],
   });
 
+  const [coverImage, setCoverImage] = useState(null);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -55,6 +57,7 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
         courseTeachers: [],
       });
     }
+    setCoverImage(null);
     setErrors({});
   }, [initialData, isOpen, classesList.length]);
 
@@ -72,8 +75,8 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!formData.courseName.trim()) errs.courseName = 'Course name is required';
-    if (!formData.courseCode.trim()) errs.courseCode = 'Course code is required';
+    if (!formData.courseName.trim()) errs.courseName = 'Subject name is required';
+    if (!formData.courseCode.trim()) errs.courseCode = 'Subject code is required';
     if (!formData.courseClass) errs.courseClass = 'Please select a class cohort';
 
     if (Object.keys(errs).length > 0) {
@@ -92,16 +95,20 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
         courseTeachers: formData.courseTeachers,
       };
 
+      if (coverImage) {
+        payload.coverImage = coverImage;
+      }
+
       if (isEdit) {
         await updateCourseMutation.mutateAsync({ id: initialData.id, data: payload });
-        addToast('Course updated successfully.');
+        addToast('Subject updated successfully.');
       } else {
         await createCourseMutation.mutateAsync(payload);
-        addToast('Course created successfully.');
+        addToast('Subject created successfully.');
       }
       onClose();
     } catch (err) {
-      addToast(err?.message || 'Failed to save course.', 'error');
+      addToast(err?.message || 'Failed to save subject.', 'error');
     }
   };
 
@@ -111,15 +118,25 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Edit Course' : 'Add Course'}
-      subtitle="Configure curriculum details, type, status, and assigned teachers."
+      title={isEdit ? 'Edit Subject' : 'Add Subject'}
+      subtitle="Configure subject details, type, status, and assigned teachers."
       width={560}
     >
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '14px' }}>
+        <div>
+          <FileInput
+            label="SUBJECT IMAGE"
+            file={coverImage}
+            existingUrl={initialData?.coverImage}
+            onChange={setCoverImage}
+            onClear={() => setCoverImage(null)}
+          />
+        </div>
+
         <div className="row">
           <div style={{ flex: 2 }}>
             <FormField
-              label="COURSE NAME *"
+              label="SUBJECT NAME *"
               placeholder="e.g. Integrated Science"
               value={formData.courseName}
               onChange={(v) => updateField('courseName', v)}
@@ -140,7 +157,7 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
         <div className="row">
           <div style={{ flex: 1 }}>
             <OptionGroup
-              label="COURSE TYPE"
+              label="SUBJECT TYPE"
               options={['Core', 'Elective']}
               value={formData.courseType}
               onChange={(v) => updateField('courseType', v)}
@@ -186,7 +203,7 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
           <FormField
             label="DESCRIPTION"
             as="textarea"
-            placeholder="Course overview, syllabus objectives, and targets..."
+            placeholder="Subject overview, syllabus objectives, and targets..."
             value={formData.courseDescription}
             onChange={(v) => updateField('courseDescription', v)}
           />
@@ -206,7 +223,7 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
             className="pb"
             disabled={isPending}
           >
-            {isPending ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Course'}
+            {isPending ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Subject'}
           </button>
         </div>
       </form>
