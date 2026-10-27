@@ -32,3 +32,7 @@ export async function updateGuardian(id, data) {
   const raw = await api.patch(`/guardians/${id}`, payload);
   return adaptGuardian(raw.guardian || raw);
 }
+
+export async function deleteGuardian(id) {
+  return api.delete(`/guardians/${id}`);
+}
