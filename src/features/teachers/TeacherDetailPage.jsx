@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Mail, Phone, MessageSquare, Ban, CheckCircle, Edit3, RotateCcw, ExternalLink } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Mail, Phone, MessageSquare, Globe, Ban, CheckCircle, Edit3, RotateCcw, ExternalLink, Trash2 } from 'lucide-react';
 import {
   BackLink,
   Avatar,
@@ -11,16 +11,21 @@ import {
   useToast,
 } from '../../components/ui';
 import { EnrollTeacherWizard } from './EnrollTeacherWizard';
-import { useTeacher, useSetTeacherStatus } from '../../hooks/queries';
+import { useTeacher, useSetTeacherStatus, useDeleteTeacher, useCourses } from '../../hooks/queries';
 
 export function TeacherDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { data: teacher, isLoading, isError, error, refetch } = useTeacher(id);
+  const { data: coursesData } = useCourses();
+  const allCourses = coursesData?.courses || [];
   const setStatusMutation = useSetTeacherStatus();
+  const deleteTeacherMutation = useDeleteTeacher();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -62,6 +67,21 @@ export function TeacherDetailPage() {
     );
   }
 
+  const fallbackAssignedCodes = allCourses
+    .filter((c) => {
+      if (!teacher) return false;
+      const matchId = (c.teacherIds || []).includes(teacher.id) || (c.teachers || []).some((th) => String(th.id || th._id) === teacher.id);
+      const matchName = c.teacher && c.teacher !== '—' && c.teacher.toLowerCase() === teacher.name.toLowerCase();
+      return matchId || matchName;
+    })
+    .map((c) => c.code || c.name);
+
+  const assignedSubjectCodes = (teacher?.assignedSubjectCodes && teacher.assignedSubjectCodes.length > 0)
+    ? teacher.assignedSubjectCodes
+    : fallbackAssignedCodes;
+
+  const subjectsCount = assignedSubjectCodes.length;
+
   const handleToggleStatus = async () => {
     try {
       const nextStatus = !teacher.isActive;
@@ -73,11 +93,30 @@ export function TeacherDetailPage() {
     }
   };
 
+  const handleDeleteTeacher = async () => {
+    try {
+      await deleteTeacherMutation.mutateAsync(teacher.id);
+      addToast(`Teacher "${teacher.name}" deleted successfully.`);
+      setIsDeleteOpen(false);
+      navigate('/teachers');
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete teacher', 'error');
+    }
+  };
+
   return (
     <div>
       <div className="row" style={{ marginBottom: '14px' }}>
         <BackLink to="/teachers" label="Back to teachers" />
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{ margin: 0, color: '#C23A52', borderColor: 'rgba(194, 58, 82, 0.3)', height: '40px' }}
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            <Trash2 size={15} strokeWidth={1.8} /> Delete Teacher
+          </button>
           <button
             type="button"
             className="ghost"
@@ -139,6 +178,21 @@ export function TeacherDetailPage() {
                   </span>
                 </a>
               )}
+              {(teacher.website || teacher.socialMedia?.website) && (
+                <a
+                  href={
+                    (teacher.website || teacher.socialMedia?.website).startsWith('http')
+                      ? teacher.website || teacher.socialMedia?.website
+                      : `https://${teacher.website || teacher.socialMedia?.website}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>
+                    <Globe size={15} strokeWidth={1.8} /> Website
+                  </span>
+                </a>
+              )}
               {teacher.altPhone && teacher.altPhone !== '—' && (
                 <a href={`tel:${teacher.altPhone}`}>
                   <span>
@@ -157,7 +211,7 @@ export function TeacherDetailPage() {
         </div>
       </div>
 
-      <div className="k3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' }}>
         <div className="cd">
           <small style={{ color: 'var(--mute)' }}>STATUS</small>
           <b className="hd" style={{ fontSize: '20px' }}>
@@ -176,6 +230,12 @@ export function TeacherDetailPage() {
             {teacher.classesCount}
           </b>
         </div>
+        <div className="cd">
+          <small style={{ color: 'var(--mute)' }}>ASSIGNED SUBJECTS</small>
+          <b className="hd" style={{ fontSize: '20px' }}>
+            {subjectsCount} {subjectsCount === 1 ? 'Subject' : 'Subjects'}
+          </b>
+        </div>
       </div>
 
       <div className="k2">
@@ -187,6 +247,33 @@ export function TeacherDetailPage() {
             ['Date of birth', teacher.dateOfBirth || '—'],
             ['Gender', teacher.gender],
             ['ID type', teacher.idType],
+            [
+              'ID documents',
+              teacher.idFront || teacher.idBack ? (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {teacher.idFront && (
+                    <a
+                      href={teacher.idFront}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                    >
+                      Front <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {teacher.idBack && (
+                    <a
+                      href={teacher.idBack}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                    >
+                      Back <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+              ) : 'None uploaded',
+            ],
             ['Status', teacher.status],
           ]}
         />
@@ -210,7 +297,7 @@ export function TeacherDetailPage() {
                       rel="noreferrer"
                       style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
                     >
-                      Cert #{idx + 1} <ExternalLink size={12} />
+                      {teacher.qualificationTitles?.[idx] || `Cert #${idx + 1}`} <ExternalLink size={12} />
                     </a>
                   ))}
                 </div>
@@ -228,13 +315,80 @@ export function TeacherDetailPage() {
             ['Phone', teacher.phone],
             ['Alt. phone', teacher.altPhone],
             ['WhatsApp', teacher.whatsapp],
-            ['LinkedIn', teacher.socialMedia?.linkedin || '—'],
-            ['Twitter / X', teacher.socialMedia?.twitter || '—'],
+            [
+              'Website',
+              teacher.website || teacher.socialMedia?.website ? (
+                <a
+                  href={
+                    (teacher.website || teacher.socialMedia?.website).startsWith('http')
+                      ? teacher.website || teacher.socialMedia?.website
+                      : `https://${teacher.website || teacher.socialMedia?.website}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {teacher.website || teacher.socialMedia?.website} <ExternalLink size={12} />
+                </a>
+              ) : '—',
+            ],
+            [
+              'LinkedIn',
+              teacher.socialMedia?.linkedin ? (
+                <a
+                  href={
+                    teacher.socialMedia.linkedin.startsWith('http')
+                      ? teacher.socialMedia.linkedin
+                      : `https://${teacher.socialMedia.linkedin}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {teacher.socialMedia.linkedin} <ExternalLink size={12} />
+                </a>
+              ) : '—',
+            ],
+            [
+              'Facebook',
+              teacher.socialMedia?.facebook ? (
+                <a
+                  href={
+                    teacher.socialMedia.facebook.startsWith('http')
+                      ? teacher.socialMedia.facebook
+                      : `https://${teacher.socialMedia.facebook}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {teacher.socialMedia.facebook} <ExternalLink size={12} />
+                </a>
+              ) : '—',
+            ],
+            [
+              'Twitter / X',
+              teacher.socialMedia?.twitter ? (
+                <a
+                  href={
+                    teacher.socialMedia.twitter.startsWith('http')
+                      ? teacher.socialMedia.twitter
+                      : `https://${teacher.socialMedia.twitter}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--acc-blue)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {teacher.socialMedia.twitter} <ExternalLink size={12} />
+                </a>
+              ) : '—',
+            ],
           ]}
         />
         <InfoCard
-          title="ASSIGNED CLASSES & LOCATION"
+          title="ASSIGNED SUBJECTS, CLASSES & LOCATION"
           rows={[
+            ['Assigned subjects', assignedSubjectCodes.length > 0 ? assignedSubjectCodes.join(', ') : 'No subjects assigned'],
             ['Classes', teacher.assignedClasses?.length > 0 ? teacher.assignedClasses.join(', ') : 'No classes assigned'],
             ['Street', teacher.street],
             ['City', teacher.city],
@@ -257,6 +411,17 @@ export function TeacherDetailPage() {
         confirmText={teacher.isActive ? 'Deactivate' : 'Activate'}
         confirmColor={teacher.isActive ? '#C23A52' : '#23895B'}
         isLoading={setStatusMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteTeacher}
+        title="Delete Teacher"
+        message={`Are you sure you want to permanently delete "${teacher.name}"? This will remove all qualifications, unassign them from classes and subjects. This action cannot be undone.`}
+        confirmText="Delete Teacher"
+        confirmColor="#C23A52"
+        isLoading={deleteTeacherMutation.isPending}
       />
 
       <EnrollTeacherWizard
