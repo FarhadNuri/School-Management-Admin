@@ -61,3 +61,18 @@ export function capitalize(str) {
   const s = String(str);
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+export function formatBdPhone(input) {
+  if (!input) return '+88';
+  let str = String(input).trim();
+  if (str === '+' || str === '+8' || str === '8' || str === '+88' || str === '') {
+    return '+88';
+  }
+  if (str.startsWith('+88')) {
+    str = str.slice(3);
+  } else if (str.startsWith('88')) {
+    str = str.slice(2);
+  }
+  const digits = str.replace(/\D/g, '').slice(0, 11);
+  return `+88${digits}`;
+}
