@@ -10,16 +10,33 @@ import {
   useToast,
 } from '../../components/ui';
 import { useCreateTeacher, useUpdateTeacher, useClasses } from '../../hooks/queries';
+import { formatBdPhone } from '../../api/adapters/helpers';
 
 const STEPS = ['IDENTITY', 'CREDENTIALS', 'ID DOCS', 'CONTACT', 'CLASSES', 'ADDRESS'];
 
 const ID_TYPES = [
-  'Passport',
+  'Birth Certificate',
   'National ID Card',
-  'Driver License',
-  'Social Security',
-  'Voter ID',
 ];
+
+const getMaxTeacherDob = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().split('T')[0];
+};
+
+const calculateAge = (dobString) => {
+  if (!dobString) return 0;
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return 0;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
 
 export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
   const isEdit = Boolean(initialData?.id);
@@ -40,10 +57,10 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
     dateOfBirth: '',
     gender: 'female',
     status: 'Active',
-    identificationType: 'Passport',
-    phone: '',
-    altPhone: '',
-    whatsapp: '',
+    identificationType: 'Birth Certificate',
+    phone: '+88',
+    altPhone: '+88',
+    whatsapp: '+88',
     linkedin: '',
     twitter: '',
     facebook: '',
@@ -53,7 +70,7 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
     city: '',
     region: '',
     postalCode: '',
-    country: 'Ghana',
+    country: 'Bangladesh',
   });
 
   const [qualificationTitles, setQualificationTitles] = useState(['']);
@@ -79,20 +96,20 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
         dateOfBirth: initialData.dateOfBirth || '',
         gender: initialData.rawGender || 'female',
         status: initialData.status || 'Active',
-        identificationType: initialData.idType !== '—' ? initialData.idType : 'Passport',
-        phone: initialData.phone !== '—' ? initialData.phone : '',
-        altPhone: initialData.altPhone !== '—' ? initialData.altPhone : '',
-        whatsapp: initialData.whatsapp !== '—' ? initialData.whatsapp : '',
+        identificationType: initialData.idType && initialData.idType !== '—' && initialData.idType !== 'Passport' ? initialData.idType : 'Birth Certificate',
+        phone: initialData.phone && initialData.phone !== '—' ? formatBdPhone(initialData.phone) : '+88',
+        altPhone: initialData.altPhone && initialData.altPhone !== '—' ? formatBdPhone(initialData.altPhone) : '+88',
+        whatsapp: initialData.whatsapp && initialData.whatsapp !== '—' ? formatBdPhone(initialData.whatsapp) : '+88',
         linkedin: initialData.socialMedia?.linkedin || '',
         twitter: initialData.socialMedia?.twitter || '',
         facebook: initialData.socialMedia?.facebook || '',
-        website: initialData.socialMedia?.website || '',
+        website: initialData.socialMedia?.website || initialData.website || '',
         classes: initialData.assignedClassIds || [],
         street: initialData.street !== '—' ? initialData.street : '',
         city: u.address?.city || '',
         region: initialData.state !== '—' ? initialData.state : '',
         postalCode: u.address?.zip || '',
-        country: initialData.country !== '—' ? initialData.country : 'Ghana',
+        country: initialData.country !== '—' ? initialData.country : 'Bangladesh',
       });
 
       const titles = (initialData.qualificationTitles && initialData.qualificationTitles.length > 0)
@@ -107,10 +124,10 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
         dateOfBirth: '',
         gender: 'female',
         status: 'Active',
-        identificationType: 'Passport',
-        phone: '',
-        altPhone: '',
-        whatsapp: '',
+        identificationType: 'Birth Certificate',
+        phone: '+88',
+        altPhone: '+88',
+        whatsapp: '+88',
         linkedin: '',
         twitter: '',
         facebook: '',
@@ -120,7 +137,7 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
         city: '',
         region: '',
         postalCode: '',
-        country: 'Ghana',
+        country: 'Bangladesh',
       });
       setQualificationTitles(['']);
     }
@@ -138,7 +155,46 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
   }, [initialData, isOpen]);
 
   const updateField = (field, val) => {
+    if (field === 'phone') {
+      const formatted = formatBdPhone(val);
+      setForm((prev) => ({
+        ...prev,
+        phone: formatted,
+        whatsapp: formatted,
+      }));
+      if (errors.phone || errors.whatsapp) {
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy.phone;
+          delete copy.whatsapp;
+          return copy;
+        });
+      }
+      return;
+    }
+
+    if (field === 'altPhone' || field === 'whatsapp') {
+      const formatted = formatBdPhone(val);
+      setForm((prev) => ({ ...prev, [field]: formatted }));
+      if (errors[field]) {
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy[field];
+          return copy;
+        });
+      }
+      return;
+    }
     setForm((prev) => ({ ...prev, [field]: val }));
+    if (field === 'dateOfBirth') {
+      if (val && calculateAge(val) < 18) {
+        setErrors((prev) => ({
+          ...prev,
+          dateOfBirth: 'Teacher must be at least 18 years old',
+        }));
+        return;
+      }
+    }
     if (errors[field]) {
       setErrors((prev) => {
         const copy = { ...prev };
@@ -201,7 +257,11 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
       } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
         errs.email = 'Valid email is required';
       }
-      if (!form.dateOfBirth) errs.dateOfBirth = 'Date of birth is required';
+      if (!form.dateOfBirth) {
+        errs.dateOfBirth = 'Date of birth is required';
+      } else if (calculateAge(form.dateOfBirth) < 18) {
+        errs.dateOfBirth = 'Teacher must be at least 18 years old';
+      }
     } else if (step === 1) {
       qualificationTitles.forEach((title, idx) => {
         if (!title.trim()) {
@@ -213,12 +273,26 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
       if (!isEdit && !files.idFront) {
         errs.idFront = 'ID document front/scan is required';
       }
-      if (!isEdit && form.identificationType !== 'Passport' && !files.idBack) {
+      const isSingleSided = form.identificationType === 'Birth Certificate' || form.identificationType === 'Passport';
+      if (!isEdit && !isSingleSided && !files.idBack) {
         errs.idBack = 'ID back document is required';
       }
     } else if (step === 3) {
-      if (!form.phone.trim()) {
+      const phoneDigits = form.phone ? form.phone.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (!phoneDigits) {
         errs.phone = 'Phone number is required';
+      } else if (phoneDigits.length !== 11) {
+        errs.phone = 'Phone number must have exactly 11 digits (+88 + 11 digits)';
+      }
+
+      const altPhoneDigits = form.altPhone ? form.altPhone.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (altPhoneDigits && altPhoneDigits.length !== 11) {
+        errs.altPhone = 'Alt. phone must have exactly 11 digits (+88 + 11 digits)';
+      }
+
+      const whatsappDigits = form.whatsapp ? form.whatsapp.replace(/^\+88/, '').replace(/\D/g, '') : '';
+      if (whatsappDigits && whatsappDigits.length !== 11) {
+        errs.whatsapp = 'WhatsApp must have exactly 11 digits (+88 + 11 digits)';
       }
     }
 
@@ -249,8 +323,8 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
         classes: form.classes,
         contactInfo: {
           phone: form.phone.trim(),
-          altPhone: form.altPhone.trim(),
-          whatsapp: form.whatsapp.trim(),
+          altPhone: form.altPhone && form.altPhone !== '+88' ? form.altPhone.trim() : '',
+          whatsapp: form.whatsapp && form.whatsapp !== '+88' ? form.whatsapp.trim() : '',
         },
         socialMedia: {
           linkedin: form.linkedin.trim(),
@@ -368,6 +442,7 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
                 label="DATE OF BIRTH *"
                 type="date"
                 value={form.dateOfBirth}
+                max={getMaxTeacherDob()}
                 onChange={(v) => updateField('dateOfBirth', v)}
               />
               <FieldError error={errors.dateOfBirth} />
@@ -375,7 +450,7 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <OptionGroup
                 label="GENDER *"
-                options={['Female', 'Male', 'Other']}
+                options={['Female', 'Male']}
                 value={form.gender.charAt(0).toUpperCase() + form.gender.slice(1)}
                 onChange={(v) => updateField('gender', v.toLowerCase())}
               />
@@ -472,7 +547,7 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
           <div className="row" style={{ gap: '12px' }}>
             <div style={{ flex: 1 }}>
               <FileInput
-                label={form.identificationType === 'Passport' ? 'PASSPORT PAGE *' : 'ID FRONT *'}
+                label={form.identificationType === 'Birth Certificate' ? 'BIRTH CERTIFICATE (SCAN) *' : form.identificationType === 'Passport' ? 'PASSPORT PAGE *' : 'ID FRONT *'}
                 file={files.idFront}
                 existingUrl={initialData?.idFront}
                 onChange={(f) => updateFile('idFront', f)}
@@ -481,7 +556,7 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
               <FieldError error={errors.idFront} />
             </div>
 
-            {form.identificationType !== 'Passport' && (
+            {form.identificationType !== 'Birth Certificate' && form.identificationType !== 'Passport' && (
               <div style={{ flex: 1 }}>
                 <FileInput
                   label="ID BACK *"
@@ -504,8 +579,9 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="PHONE *"
-                placeholder="+233 ..."
+                placeholder="+88017XXXXXXXX"
                 value={form.phone}
+                maxLength={14}
                 onChange={(v) => updateField('phone', v)}
               />
               <FieldError error={errors.phone} />
@@ -513,19 +589,23 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
             <div style={{ flex: 1 }}>
               <FormField
                 label="ALT. PHONE"
-                placeholder="+233 ..."
+                placeholder="+88017XXXXXXXX"
                 value={form.altPhone}
+                maxLength={14}
                 onChange={(v) => updateField('altPhone', v)}
               />
+              <FieldError error={errors.altPhone} />
             </div>
           </div>
 
           <FormField
             label="WHATSAPP"
-            placeholder="+233 ..."
+            placeholder="+88017XXXXXXXX"
             value={form.whatsapp}
+            maxLength={14}
             onChange={(v) => updateField('whatsapp', v)}
           />
+          <FieldError error={errors.whatsapp} />
 
           <div style={{ marginTop: '8px' }}>
             <small style={{ color: 'var(--mute)', fontWeight: 600 }}>SOCIAL MEDIA (OPTIONAL)</small>
@@ -587,21 +667,21 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
         <>
           <FormField
             label="STREET ADDRESS"
-            placeholder="e.g. 14 Independence Ave"
+            placeholder="e.g. Sugandha"
             value={form.street}
             onChange={(v) => updateField('street', v)}
           />
           <div className="row">
             <FormField
               label="CITY"
-              placeholder="e.g. Accra"
+              placeholder="e.g. Chattogram"
               value={form.city}
               onChange={(v) => updateField('city', v)}
               style={{ flex: 1 }}
             />
             <FormField
               label="REGION / STATE"
-              placeholder="e.g. Greater Accra"
+              placeholder="e.g. Chattogram"
               value={form.region}
               onChange={(v) => updateField('region', v)}
               style={{ flex: 1 }}
@@ -610,14 +690,14 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
           <div className="row">
             <FormField
               label="POSTAL CODE"
-              placeholder="e.g. GA-183-9322"
+              placeholder="e.g. 4203"
               value={form.postalCode}
               onChange={(v) => updateField('postalCode', v)}
               style={{ flex: 1 }}
             />
             <FormField
               label="COUNTRY"
-              placeholder="e.g. Ghana"
+              placeholder="e.g. Bangladesh"
               value={form.country}
               onChange={(v) => updateField('country', v)}
               style={{ flex: 1 }}
