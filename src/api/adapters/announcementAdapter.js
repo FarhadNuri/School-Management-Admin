@@ -23,6 +23,7 @@ export function adaptAnnouncement(raw = {}) {
     dateMonth: getMonthAbbr(raw.createdAt),
     dateDay: getDayNum(raw.createdAt),
     postedDate: `Posted ${formatDate(raw.createdAt)}`,
+    attachments: Array.isArray(raw.attachments) ? raw.attachments : [],
   };
 }
 
