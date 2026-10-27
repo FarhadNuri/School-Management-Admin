@@ -15,9 +15,6 @@ A modern, high-performance administrative web application designed for education
 - **Complaints & Dispute Resolution Desk**: Structured 3-state resolution pipeline (`Open`, `Under review`, `Resolved`) with resolution notes, case timelines, status filters, and case deletion.
 - **Campus Notices & Announcements**: School-wide broadcast notice board with multipart file attachment uploads, category/severity filtering, and notice editor.
 - **Finance & Invoicing**: Tuition fee tracking, invoice generator modal, payment status tracking, and transaction ledger.
-- **Universal Deletion Safeguards**: Interactive confirmation modals across all entities (Students, Teachers, Guardians, Classes, Subjects, Announcements, Complaints) with automatic cross-query cache invalidation.
-- **Secure Authentication**: Refined login experience with password visibility toggle, session persistence ("Remember me"), focus animations, and security trust badges.
-- **Tailored Design System**: Custom CSS design tokens, browser autofill styling normalization, reusable card anatomy (`.cd-top`, `.cd-body`, `.cd-footer`, `.cd-btn-view`, `.cd-btn-delete`), and dark-mode tag contrasts.
 
 ---
 
