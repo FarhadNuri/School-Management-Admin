@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, RotateCcw } from 'lucide-react';
+import { User, RotateCcw, Trash2, Calendar, Mail } from 'lucide-react';
 import {
   SearchBar,
   Chips,
@@ -9,18 +9,24 @@ import {
   Avatar,
   EmptyState,
   CardSkeleton,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
 import { EnrollStudentWizard } from './EnrollStudentWizard';
-import { useStudents } from '../../hooks/queries';
+import { useStudents, useDeleteStudent } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
 
 export function StudentsPage() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusChip, setStatusChip] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState(null);
+
+  const deleteStudentMutation = useDeleteStudent();
 
   const debouncedSearch = useDebounce(searchInput, 400);
 
@@ -41,6 +47,17 @@ export function StudentsPage() {
   const handleSearchClick = () => {
     setSearchQuery(searchInput);
     refetch();
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    try {
+      await deleteStudentMutation.mutateAsync(studentToDelete.id);
+      addToast(`Student "${studentToDelete.name}" deleted successfully.`);
+      setStudentToDelete(null);
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete student', 'error');
+    }
   };
 
   return (
@@ -102,41 +119,69 @@ export function StudentsPage() {
         <div className={`gr ${viewMode === 'list' ? 'ls' : ''}`}>
           {students.map((s, idx) => (
             <div key={s.id} className="cd">
-              <div className="row">
-                <Avatar index={idx} size={42} src={s.photo} />
-                <div>
-                  <h3>{s.name}</h3>
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <User size={14} strokeWidth={1.8} /> {s.guardian}
+              <div className="cd-top">
+                <Avatar index={idx} size={44} radius={12} src={s.photo} />
+                <div className="cd-top-info">
+                  <h3 className="cd-title" title={s.name}>{s.name}</h3>
+                  <p className="cd-sub" title={s.guardian && s.guardian !== '—' ? `Guardian: ${s.guardian}` : ''}>
+                    <User size={13} strokeWidth={1.8} />
+                    {s.guardian && s.guardian !== '—' ? s.guardian : 'No Guardian assigned'}
                   </p>
                 </div>
+                <Tag color={s.isActive ? 'g' : 'a'} style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                  {s.status}
+                </Tag>
               </div>
 
-              <div className="row" style={{ flexWrap: 'wrap' }}>
-                <Tag>{s.city}</Tag>
-                <Tag color={s.isActive ? 'g' : 'a'}>{s.status}</Tag>
-                <Tag>{s.class}</Tag>
+              <div className="cd-tags">
+                {s.class && s.class !== '—' && <Tag color="b">{s.class}</Tag>}
+                {s.city && s.city !== '—' && <Tag>{s.city}</Tag>}
               </div>
 
-              <p>Admitted {s.admittedDate}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--mute)' }}>
+                <Calendar size={13} strokeWidth={1.8} />
+                <span>Admitted {s.admittedDate || 'Recently'}</span>
+              </div>
 
-              <div className="row">
-                <span style={{ color: 'var(--mute)', fontSize: '12px' }}>{s.email}</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <div className="cd-footer">
+                <span className="cd-meta" title={s.email && s.email !== '—' ? s.email : ''}>
+                  <Mail size={13} strokeWidth={1.8} />
+                  <span>{s.email && s.email !== '—' ? s.email : 'No email'}</span>
+                </span>
+                <div className="cd-actions">
                   <button
                     type="button"
-                    className="ghost"
-                    style={{ margin: 0 }}
+                    className="cd-btn-delete"
+                    onClick={() => setStudentToDelete(s)}
+                    title="Delete Student"
+                    aria-label={`Delete ${s.name}`}
+                  >
+                    <Trash2 size={14} strokeWidth={1.8} />
+                  </button>
+                  <button
+                    type="button"
+                    className="cd-btn-view"
                     onClick={() => navigate(`/students/${s.id}`)}
                   >
                     View Profile
                   </button>
-                </span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(studentToDelete)}
+        onClose={() => setStudentToDelete(null)}
+        onConfirm={handleDeleteStudent}
+        title="Delete Student"
+        message={`Are you sure you want to permanently delete "${studentToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete Student"
+        confirmColor="#C23A52"
+        isLoading={deleteStudentMutation.isPending}
+      />
 
       <EnrollStudentWizard
         isOpen={isWizardOpen}

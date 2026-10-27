@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Mail, Phone, MessageSquare, Ban, CheckCircle, Edit3, RotateCcw } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Mail, Phone, MessageSquare, Ban, CheckCircle, Edit3, RotateCcw, Trash2 } from 'lucide-react';
 import {
   BackLink,
   Avatar,
@@ -13,17 +13,20 @@ import {
   Skeleton,
   useToast,
 } from '../../components/ui';
-import { useGuardian, useSetGuardianStatus, useUpdateGuardian } from '../../hooks/queries';
+import { useGuardian, useSetGuardianStatus, useUpdateGuardian, useDeleteGuardian } from '../../hooks/queries';
 
 export function GuardianDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { data: guardian, isLoading, isError, error, refetch } = useGuardian(id);
   const setStatusMutation = useSetGuardianStatus();
   const updateGuardianMutation = useUpdateGuardian();
+  const deleteGuardianMutation = useDeleteGuardian();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [editForm, setEditForm] = useState({
     firstName: '',
@@ -35,7 +38,7 @@ export function GuardianDetailPage() {
     city: '',
     state: '',
     zip: '',
-    country: 'Ghana',
+    country: 'Bangladesh',
   });
   const [editErrors, setEditErrors] = useState({});
 
@@ -51,7 +54,7 @@ export function GuardianDetailPage() {
         city: guardian.city !== '—' ? guardian.city.split(',')[0].trim() : '',
         state: guardian.state !== '—' ? guardian.state : '',
         zip: guardian.zip !== '—' ? guardian.zip : '',
-        country: guardian.country !== '—' ? guardian.country : 'Ghana',
+        country: guardian.country !== '—' ? guardian.country : 'Bangladesh',
       });
     }
   }, [guardian]);
@@ -146,11 +149,30 @@ export function GuardianDetailPage() {
     }
   };
 
+  const handleDeleteGuardian = async () => {
+    try {
+      await deleteGuardianMutation.mutateAsync(guardian.id);
+      addToast(`Guardian "${guardian.name}" deleted successfully.`);
+      setIsDeleteOpen(false);
+      navigate('/guardians');
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete guardian', 'error');
+    }
+  };
+
   return (
     <div>
       <div className="row" style={{ marginBottom: '14px' }}>
         <BackLink to="/guardians" label="Back to guardians" />
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{ margin: 0, color: '#C23A52', borderColor: 'rgba(194, 58, 82, 0.3)', height: '40px' }}
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            <Trash2 size={15} strokeWidth={1.8} /> Delete Guardian
+          </button>
           <button
             type="button"
             className="ghost"
@@ -306,6 +328,17 @@ export function GuardianDetailPage() {
         confirmText={guardian.isActive ? 'Deactivate' : 'Activate'}
         confirmColor={guardian.isActive ? '#C23A52' : '#23895B'}
         isLoading={setStatusMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteGuardian}
+        title="Delete Guardian"
+        message={`Are you sure you want to permanently delete "${guardian.name}"? This action cannot be undone.`}
+        confirmText="Delete Guardian"
+        confirmColor="#C23A52"
+        isLoading={deleteGuardianMutation.isPending}
       />
 
       {/* Edit Guardian Modal */}

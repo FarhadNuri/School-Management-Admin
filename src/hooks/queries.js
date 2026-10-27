@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getStudents, getStudentById, addStudent, updateStudent, setStudentStatus } from '../api/endpoints/students';
-import { getTeachers, getTeacherById, addTeacher, updateTeacher, setTeacherStatus } from '../api/endpoints/teachers';
-import { getGuardians, getGuardianById, updateGuardian, setGuardianStatus } from '../api/endpoints/guardians';
-import { getClasses, getClassById, addClass, updateClass } from '../api/endpoints/classes';
-import { getCourses, getCourseById, addCourse, updateCourse } from '../api/endpoints/courses';
-import { getAnnouncements, getAnnouncementById, addAnnouncement, updateAnnouncement } from '../api/endpoints/announcements';
-import { getComplaints, getComplaintById } from '../api/endpoints/complaints';
+import { getStudents, getStudentById, addStudent, updateStudent, setStudentStatus, deleteStudent } from '../api/endpoints/students';
+import { getTeachers, getTeacherById, addTeacher, updateTeacher, setTeacherStatus, deleteTeacher } from '../api/endpoints/teachers';
+import { getGuardians, getGuardianById, updateGuardian, setGuardianStatus, deleteGuardian } from '../api/endpoints/guardians';
+import { getClasses, getClassById, addClass, updateClass, deleteClass } from '../api/endpoints/classes';
+import { getCourses, getCourseById, addCourse, updateCourse, deleteCourse } from '../api/endpoints/courses';
+import { getAnnouncements, getAnnouncementById, addAnnouncement, updateAnnouncement, deleteAnnouncement } from '../api/endpoints/announcements';
+import { getComplaints, getComplaintById, updateComplaintStatus, deleteComplaint } from '../api/endpoints/complaints';
+import { useToast } from '../components/ui';
 import { getPayments, getPaymentById, createInvoice, resendInvoice, cancelInvoice } from '../api/endpoints/payments';
 
 // ================= STUDENTS =================
@@ -55,6 +56,20 @@ export function useSetStudentStatus() {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['students', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useDeleteStudent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteStudent(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['guardians'] });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
     },
   });
 }
@@ -110,6 +125,19 @@ export function useSetTeacherStatus() {
   });
 }
 
+export function useDeleteTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteTeacher(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}
+
 // ================= GUARDIANS =================
 export function useGuardians(params) {
   return useQuery({
@@ -145,6 +173,18 @@ export function useSetGuardianStatus() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['guardians'] });
       queryClient.invalidateQueries({ queryKey: ['guardians', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useDeleteGuardian() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteGuardian(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guardians'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
@@ -189,6 +229,20 @@ export function useUpdateClass() {
   });
 }
 
+export function useDeleteClass() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteClass(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+  });
+}
+
 // ================= COURSES =================
 export function useCourses(params) {
   return useQuery({
@@ -211,6 +265,7 @@ export function useCreateCourse() {
     mutationFn: addCourse,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
@@ -223,10 +278,25 @@ export function useUpdateCourse() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       queryClient.invalidateQueries({ queryKey: ['courses', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
+
+export function useDeleteCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteCourse(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+    },
+  });
+}
+
 
 // ================= ANNOUNCEMENTS =================
 export function useAnnouncements(params) {
@@ -267,6 +337,17 @@ export function useUpdateAnnouncement() {
   });
 }
 
+export function useDeleteAnnouncement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteAnnouncement(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
 // ================= COMPLAINTS =================
 export function useComplaints() {
   return useQuery({
@@ -280,6 +361,48 @@ export function useComplaint(id) {
     queryKey: ['complaints', id],
     queryFn: () => getComplaintById(id),
     enabled: Boolean(id),
+  });
+}
+
+export function useDeleteComplaint() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => deleteComplaint(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useUpdateComplaintStatus() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, status, resolutionNote }) =>
+      updateComplaintStatus(id, { status, resolutionNote }),
+    onSuccess: (updatedComplaint, variables) => {
+      if (variables?.id && updatedComplaint) {
+        queryClient.setQueryData(['complaints', variables.id], updatedComplaint);
+      }
+      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
+      let toastMessage = 'Complaint status updated';
+      if (variables?.status === 'under_review') {
+        toastMessage = 'Complaint marked as Under review';
+      } else if (variables?.status === 'resolved') {
+        toastMessage = 'Complaint resolved';
+      } else if (variables?.status === 'pending') {
+        toastMessage = 'Complaint reopened';
+      }
+      addToast(toastMessage, 'success');
+    },
+    onError: (error) => {
+      const message = error?.message || error?.error || 'Failed to update complaint status';
+      addToast(message, 'error');
+    },
   });
 }
 

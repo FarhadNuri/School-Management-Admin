@@ -74,3 +74,7 @@ export async function updateStudent(id, data) {
 
 // Backwards-compatible alias for existing mock service caller
 export const enrollStudent = addStudent;
+
+export async function deleteStudent(id) {
+  return api.delete(`/students/${id}`);
+}

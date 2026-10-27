@@ -24,6 +24,13 @@ export async function getAnnouncementById(id) {
 }
 
 export async function addAnnouncement(data) {
+  if (typeof FormData !== 'undefined' && data instanceof FormData) {
+    const raw = await api.post('/announcements', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return adaptAnnouncement(raw.announcement || raw);
+  }
+
   const payload = {
     title: data.title,
     description: data.description || data.details || '',
@@ -37,10 +44,21 @@ export async function addAnnouncement(data) {
 }
 
 export async function updateAnnouncement(id, data) {
+  if (typeof FormData !== 'undefined' && data instanceof FormData) {
+    const raw = await api.patch(`/announcements/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return adaptAnnouncement(raw.announcement || raw);
+  }
+
   const payload = { ...data };
   if (payload.category) payload.category = String(payload.category).toLowerCase();
   if (payload.severity) payload.severity = String(payload.severity).toLowerCase();
 
   const raw = await api.patch(`/announcements/${id}`, payload);
   return adaptAnnouncement(raw.announcement || raw);
+}
+
+export async function deleteAnnouncement(id) {
+  return api.delete(`/announcements/${id}`);
 }

@@ -88,3 +88,7 @@ export async function updateTeacher(id, data) {
 
 // Backwards-compatible alias for old mock
 export const enrollTeacher = addTeacher;
+
+export async function deleteTeacher(id) {
+  return api.delete(`/teachers/${id}`);
+}

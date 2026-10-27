@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Mail, Phone, MessageSquare, Ban, CheckCircle, Edit3, RotateCcw } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Mail, Phone, MessageSquare, Ban, CheckCircle, Edit3, RotateCcw, Trash2 } from 'lucide-react';
 import {
   BackLink,
   Avatar,
@@ -11,16 +11,19 @@ import {
   useToast,
 } from '../../components/ui';
 import { EnrollStudentWizard } from './EnrollStudentWizard';
-import { useStudent, useSetStudentStatus } from '../../hooks/queries';
+import { useStudent, useSetStudentStatus, useDeleteStudent } from '../../hooks/queries';
 
 export function StudentDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { data: student, isLoading, isError, error, refetch } = useStudent(id);
   const setStatusMutation = useSetStudentStatus();
+  const deleteStudentMutation = useDeleteStudent();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -73,11 +76,30 @@ export function StudentDetailPage() {
     }
   };
 
+  const handleDeleteStudent = async () => {
+    try {
+      await deleteStudentMutation.mutateAsync(student.id);
+      addToast(`Student "${student.name}" deleted successfully.`);
+      setIsDeleteOpen(false);
+      navigate('/students');
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete student', 'error');
+    }
+  };
+
   return (
     <div>
       <div className="row" style={{ marginBottom: '14px' }}>
         <BackLink to="/students" label="Back to students" />
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{ margin: 0, color: '#C23A52', borderColor: 'rgba(194, 58, 82, 0.3)', height: '40px' }}
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            <Trash2 size={15} strokeWidth={1.8} /> Delete Student
+          </button>
           <button
             type="button"
             className="ghost"
@@ -231,6 +253,17 @@ export function StudentDetailPage() {
         confirmText={student.isActive ? 'Ban User' : 'Activate User'}
         confirmColor={student.isActive ? '#C23A52' : '#23895B'}
         isLoading={setStatusMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteStudent}
+        title="Delete Student"
+        message={`Are you sure you want to permanently delete "${student.name}"? This will delete all student records and unassign them from their class. This action cannot be undone.`}
+        confirmText="Delete Student"
+        confirmColor="#C23A52"
+        isLoading={deleteStudentMutation.isPending}
       />
 
       <EnrollStudentWizard

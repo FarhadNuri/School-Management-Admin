@@ -1,10 +1,5 @@
-import { formatDate, resolvePhoto, capitalize } from './helpers';
-
-const STATUS_MAP = {
-  pending: { label: 'Open', color: 'b' },
-  in_progress: { label: 'Under Review', color: 'a' },
-  resolved: { label: 'Resolved', color: 'g' },
-};
+﻿import { formatDate, resolvePhoto, capitalize } from './helpers';
+import { getStatusConfig } from '../../features/complaints/status';
 
 const SEVERITY_COLOR = {
   high: 'a',
@@ -14,10 +9,11 @@ const SEVERITY_COLOR = {
 
 export function adaptComplaint(raw = {}) {
   const reporter = raw.reporter || {};
-  const statusKey = String(raw.status || 'pending').toLowerCase();
+  const rawStatusVal = Array.isArray(raw.status) ? raw.status[0] : raw.status;
+  const statusKey = String(rawStatusVal || 'pending').toLowerCase();
   const severityKey = String(raw.severity || 'low').toLowerCase();
 
-  const statusInfo = STATUS_MAP[statusKey] || { label: capitalize(statusKey), color: '' };
+  const statusInfo = getStatusConfig(statusKey);
   const severityColor = SEVERITY_COLOR[severityKey] || '';
 
   const photoEvidence = Array.isArray(raw.photoEvidence)
@@ -26,13 +22,20 @@ export function adaptComplaint(raw = {}) {
     ? [resolvePhoto(raw.photoEvidence)].filter(Boolean)
     : [];
 
+  const resolvedDateRaw = raw.resolvedAt || raw.dateResolved || raw.resolutionDate;
+  const resolvedFormatted = resolvedDateRaw
+    ? formatDate(resolvedDateRaw)
+    : statusKey === 'resolved'
+    ? formatDate(raw.updatedAt || raw.createdAt)
+    : 'Pending';
+
   return {
     id: String(raw._id || raw.id || ''),
     rawComplaint: raw,
     title: raw.title || '—',
     status: statusInfo.label,
     statusKey,
-    statusColor: statusInfo.color,
+    statusColor: statusInfo.tagClass,
     severity: capitalize(severityKey),
     severityKey,
     severityColor,
@@ -46,14 +49,13 @@ export function adaptComplaint(raw = {}) {
     description: raw.description || '—',
     created: formatDate(raw.createdAt),
     updated: formatDate(raw.updatedAt || raw.createdAt),
-    resolved: statusKey === 'resolved' ? formatDate(raw.updatedAt || raw.createdAt) : 'Pending',
+    resolvedAt: resolvedDateRaw || null,
+    resolved: resolvedFormatted,
+    resolutionNote: raw.resolutionNote || raw.resolutionNotes || '',
+    statusHistory: Array.isArray(raw.statusHistory) ? raw.statusHistory : [],
     photoEvidence,
-    activeNotice:
-      statusKey === 'pending'
-        ? 'This case is still active and awaiting a resolution.'
-        : statusKey === 'in_progress'
-        ? 'This case is currently under administrative review.'
-        : null,
+    activeNotice: statusInfo.noticeText || null,
+    noticeTone: statusInfo.noticeTone || 'amber',
   };
 }
 
