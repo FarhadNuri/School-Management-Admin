@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, RotateCcw } from 'lucide-react';
+import { Calendar, RotateCcw, Trash2 } from 'lucide-react';
 import {
   SearchBar,
   FilterDropdown,
@@ -10,8 +10,11 @@ import {
   Tag,
   EmptyState,
   CardSkeleton,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
-import { useComplaints } from '../../hooks/queries';
+import { useComplaints, useDeleteComplaint } from '../../hooks/queries';
+import { getStatusConfig } from './status';
 
 const SEVERITY_COLOR = {
   High: 'a',
@@ -19,34 +22,36 @@ const SEVERITY_COLOR = {
   Low: 'g',
 };
 
-const STATUS_COLOR = {
-  Open: 'b',
-  'Under Review': 'a',
-  Resolved: 'g',
-};
-
 export function ComplaintsPage() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [urgency, setUrgency] = useState('All urgencies');
   const [statusChip, setStatusChip] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
+  const [complaintToDelete, setComplaintToDelete] = useState(null);
+
+  const deleteComplaintMutation = useDeleteComplaint();
 
   const { data, isLoading, isError, error, refetch } = useComplaints();
   const complaints = data?.complaints || [];
 
   // Compute stat tiles dynamically from full complaint list
   const openCount = complaints.filter(
-    (c) => c.status === 'Open' || c.statusKey === 'pending'
+    (c) => c.statusKey === 'pending' || c.status === 'Open'
   ).length;
   const underReviewCount = complaints.filter(
-    (c) => c.status === 'Under Review' || c.statusKey === 'in_progress'
+    (c) =>
+      c.statusKey === 'under_review' ||
+      c.statusKey === 'in_progress' ||
+      c.status === 'Under review' ||
+      c.status === 'Under Review'
   ).length;
   const urgentActiveCount = complaints.filter(
     (c) => (c.severityKey === 'high' || c.severity === 'High') && c.statusKey !== 'resolved'
   ).length;
   const resolvedCount = complaints.filter(
-    (c) => c.status === 'Resolved' || c.statusKey === 'resolved'
+    (c) => c.statusKey === 'resolved' || c.status === 'Resolved'
   ).length;
 
   const filtered = complaints.filter((c) => {
@@ -61,10 +66,13 @@ export function ComplaintsPage() {
 
     const matchStatus =
       statusChip === 'All' ||
-      c.status.toLowerCase() === statusChip.toLowerCase() ||
-      (statusChip === 'Open' && c.statusKey === 'pending') ||
-      (statusChip === 'Under Review' && c.statusKey === 'in_progress') ||
-      (statusChip === 'Resolved' && c.statusKey === 'resolved');
+      (statusChip === 'Open' && (c.statusKey === 'pending' || c.status === 'Open')) ||
+      (statusChip === 'Under Review' &&
+        (c.statusKey === 'under_review' ||
+          c.statusKey === 'in_progress' ||
+          c.status === 'Under review' ||
+          c.status === 'Under Review')) ||
+      (statusChip === 'Resolved' && (c.statusKey === 'resolved' || c.status === 'Resolved'));
 
     const matchUrgency =
       urgency === 'All urgencies' ||
@@ -73,6 +81,17 @@ export function ComplaintsPage() {
 
     return matchSearch && matchStatus && matchUrgency;
   });
+
+  const handleDeleteComplaint = async () => {
+    if (!complaintToDelete) return;
+    try {
+      await deleteComplaintMutation.mutateAsync(complaintToDelete.id);
+      addToast('Complaint deleted successfully.');
+      setComplaintToDelete(null);
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete complaint', 'error');
+    }
+  };
 
   return (
     <div>
@@ -141,56 +160,70 @@ export function ComplaintsPage() {
         <EmptyState title="No complaints found" description="Try a different filter or search term." />
       ) : (
         <div className={`gr ${viewMode === 'list' ? 'ls' : ''}`}>
-          {filtered.map((c) => (
-            <div key={c.id} className="cd">
-              <div className="row">
-                <h3>{c.title}</h3>
-                <span
-                  className={`tg ${STATUS_COLOR[c.status] || ''}`}
-                  style={{ marginLeft: 'auto' }}
-                >
-                  {c.status}
-                </span>
-              </div>
+          {filtered.map((c) => {
+            const statusCfg = getStatusConfig(c.statusKey || c.status);
 
-              <div className="row" style={{ flexWrap: 'wrap' }}>
-                <Tag color={SEVERITY_COLOR[c.severity] || ''}>{c.severity}</Tag>
-                <Tag>{c.category}</Tag>
-              </div>
+            return (
+              <div key={c.id} className="cd">
+                <div className="cd-top">
+                  <div className="cd-top-info">
+                    <h3 className="cd-title" title={c.title}>{c.title}</h3>
+                    <p className="cd-sub">
+                      <span>{c.complainant} ({c.role})</span>
+                      <span>→</span>
+                      <span style={{ color: '#E5536B' }}>{c.reportedParty}</span>
+                    </p>
+                  </div>
+                  <Tag color={statusCfg.tagClass} style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                    {statusCfg.label}
+                  </Tag>
+                </div>
 
-              <div className="pk">
-                <small style={{ width: '100%', letterSpacing: '.1em', color: 'var(--mute)' }}>
-                  PARTIES
-                </small>
-                <span className="tg" style={{ background: 'rgba(120,90,200,.1)' }}>
-                  {c.complainant} · {c.role}
-                </span>
-                →
-                <span className="tg r">{c.reportedParty}</span>
-              </div>
+                <div className="cd-tags">
+                  <Tag color={SEVERITY_COLOR[c.severity] || ''}>{c.severity}</Tag>
+                  <Tag>{c.category}</Tag>
+                </div>
 
-              <div className="row">
-                <span style={{ color: 'var(--mute)', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <Calendar size={14} strokeWidth={1.8} /> {c.filedDate}
-                </span>
+                <div className="cd-footer">
+                  <span className="cd-meta">
+                    <Calendar size={13} strokeWidth={1.8} />
+                    <span>{c.filedDate}</span>
+                  </span>
+                  <div className="cd-actions">
+                    <button
+                      type="button"
+                      className="cd-btn-delete"
+                      onClick={() => setComplaintToDelete(c)}
+                      title="Delete Complaint"
+                      aria-label={`Delete ${c.title}`}
+                    >
+                      <Trash2 size={14} strokeWidth={1.8} />
+                    </button>
+                    <button
+                      type="button"
+                      className="cd-btn-view"
+                      onClick={() => navigate(`/complaints/${c.id}`)}
+                    >
+                      View Case
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              <div className="row">
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="ghost"
-                    style={{ margin: 0 }}
-                    onClick={() => navigate(`/complaints/${c.id}`)}
-                  >
-                    View Case
-                  </button>
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(complaintToDelete)}
+        onClose={() => setComplaintToDelete(null)}
+        onConfirm={handleDeleteComplaint}
+        title="Delete Complaint"
+        message={`Are you sure you want to permanently delete this complaint ("${complaintToDelete?.title}")? This action cannot be undone.`}
+        confirmText="Delete Complaint"
+        confirmColor="#C23A52"
+        isLoading={deleteComplaintMutation.isPending}
+      />
     </div>
   );
 }
