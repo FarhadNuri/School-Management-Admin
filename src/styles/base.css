@@ -28,6 +28,17 @@ button, input, select, textarea {
   color: inherit;
 }
 
+/* Prevent ugly browser autofill white box override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--soft) inset !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 a {
   color: inherit;
   text-decoration: none;

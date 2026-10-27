@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Calendar, RotateCcw } from 'lucide-react';
+import { User, Calendar, RotateCcw, Trash2 } from 'lucide-react';
 import {
   SearchBar,
   Chips,
@@ -8,18 +8,24 @@ import {
   Tag,
   EmptyState,
   CardSkeleton,
+  ClassImageTile,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
 import { ClassModal } from './ClassModal';
-import { useClasses } from '../../hooks/queries';
+import { useClasses, useDeleteClass } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
 
 export function ClassesPage() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
+  const deleteClassMutation = useDeleteClass();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusChip, setStatusChip] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [classToDelete, setClassToDelete] = useState(null);
 
   const debouncedSearch = useDebounce(searchInput, 400);
 
@@ -39,6 +45,17 @@ export function ClassesPage() {
   const handleSearchClick = () => {
     setSearchQuery(searchInput);
     refetch();
+  };
+
+  const handleDeleteClass = async () => {
+    if (!classToDelete) return;
+    try {
+      await deleteClassMutation.mutateAsync(classToDelete.id);
+      addToast(`Class "${classToDelete.name}" deleted successfully.`);
+      setClassToDelete(null);
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete class', 'error');
+    }
   };
 
   return (
@@ -100,47 +117,75 @@ export function ClassesPage() {
         <div className={`gr ${viewMode === 'list' ? 'ls' : ''}`}>
           {classesList.map((c) => (
             <div key={c.id} className="cd">
-              <div className="row">
-                <span className="dt" style={{ height: '48px' }}>
-                  <small style={{ fontSize: '8px' }}>GR</small>
-                  <b>{c.grade}</b>
-                </span>
-                <div>
-                  <h3>{c.name}</h3>
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <User size={14} strokeWidth={1.8} /> {c.teacher}
+              <div className="cd-top">
+                <ClassImageTile
+                  src={c.coverImage}
+                  grade={c.grade}
+                  size={44}
+                  radius={12}
+                  alt={c.name}
+                />
+                <div className="cd-top-info">
+                  <h3 className="cd-title" title={c.name}>{c.name}</h3>
+                  <p className="cd-sub" title={c.teacher}>
+                    <User size={13} strokeWidth={1.8} />
+                    {c.teacher && c.teacher !== '—' ? c.teacher : 'No Class Teacher'}
                   </p>
                 </div>
+                <Tag color={c.isActive ? 'g' : 'a'} style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                  {c.status}
+                </Tag>
               </div>
 
-              <div className="row" style={{ flexWrap: 'wrap' }}>
-                <Tag color={c.isActive ? 'g' : 'a'}>{c.status}</Tag>
-                <Tag>Grade {c.grade}</Tag>
-                <Tag>{c.enrolled} enrolled</Tag>
-                <Tag>{c.coursesCount} courses</Tag>
+              <div className="cd-tags">
+                <Tag color="b">Grade {c.grade}</Tag>
+                <Tag>{c.enrolled || 0} enrolled</Tag>
+                <Tag>{c.coursesCount || 0} subjects</Tag>
               </div>
 
-              <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Calendar size={14} strokeWidth={1.8} /> {c.academicYear}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--mute)' }}>
+                <Calendar size={13} strokeWidth={1.8} />
+                <span>{c.academicYear || 'Current Academic Year'}</span>
+              </div>
 
-              <div className="row">
-                <span style={{ color: 'var(--mute)', fontSize: '12px' }}>{c.code}</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <div className="cd-footer">
+                <span className="cd-meta" title={c.code}>
+                  <span>{c.code}</span>
+                </span>
+                <div className="cd-actions">
                   <button
                     type="button"
-                    className="ghost"
-                    style={{ margin: 0 }}
+                    className="cd-btn-delete"
+                    onClick={() => setClassToDelete(c)}
+                    title="Delete Class"
+                    aria-label={`Delete ${c.name}`}
+                  >
+                    <Trash2 size={14} strokeWidth={1.8} />
+                  </button>
+                  <button
+                    type="button"
+                    className="cd-btn-view"
                     onClick={() => navigate(`/classes/${c.id}`)}
                   >
                     View Class
                   </button>
-                </span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(classToDelete)}
+        onClose={() => setClassToDelete(null)}
+        onConfirm={handleDeleteClass}
+        title="Delete Class"
+        message={`Are you sure you want to delete "${classToDelete?.name}"? This will unassign all teachers, subjects, and students associated with this class. This action cannot be undone.`}
+        confirmText="Delete Class"
+        confirmColor="#C23A52"
+        isLoading={deleteClassMutation.isPending}
+      />
 
       <ClassModal
         isOpen={isModalOpen}

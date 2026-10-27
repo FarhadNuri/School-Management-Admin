@@ -34,3 +34,8 @@ export async function updateClass(id, data) {
   const raw = await api.patch(`/classes/${id}`, fd);
   return adaptClass(raw.class || raw);
 }
+
+export async function deleteClass(id) {
+  const raw = await api.delete(`/classes/${id}`);
+  return raw;
+}

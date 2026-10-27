@@ -1,46 +1,57 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, RotateCcw } from 'lucide-react';
+import { User, RotateCcw, Trash2, Users, BookOpen, GraduationCap } from 'lucide-react';
 import {
   SearchBar,
-  Chips,
   ViewToggle,
   Tag,
   EmptyState,
   CardSkeleton,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
 import { CourseModal } from './CourseModal';
-import { useCourses } from '../../hooks/queries';
+import { useCourses, useDeleteCourse } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
+
+function getCourseGrade(course) {
+  if (course.grade) {
+    const g = String(course.grade).trim();
+    if (g.includes('6')) return 'Class 6';
+    if (g.includes('7')) return 'Class 7';
+    if (g.includes('8')) return 'Class 8';
+  }
+  const text = `${course.class || ''} ${course.name || ''} ${course.code || ''}`.toLowerCase();
+  if (text.includes('6') || text.includes('six')) return 'Class 6';
+  if (text.includes('7') || text.includes('seven')) return 'Class 7';
+  if (text.includes('8') || text.includes('eight')) return 'Class 8';
+  return 'Other';
+}
 
 export function CoursesPage() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
+  const deleteCourseMutation = useDeleteCourse();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusChip, setStatusChip] = useState('All');
-  const [typeChip, setTypeChip] = useState('All types');
+  const [selectedClass, setSelectedClass] = useState('Class 6');
   const [viewMode, setViewMode] = useState('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
   const debouncedSearch = useDebounce(searchInput, 400);
 
   const currentSearch = searchQuery !== '' ? searchQuery : debouncedSearch;
 
-  const statusParam = statusChip === 'All' ? undefined : statusChip;
-  const typeParam = typeChip === 'All types' ? undefined : typeChip;
-
   const { data, isLoading, isError, error, refetch } = useCourses({
     search: currentSearch,
-    courseStatus: statusParam,
-    courseType: typeParam,
   });
 
   const rawCourses = data?.courses || [];
 
-  // Client-side filtering guarantee if backend ignores filters
+  // Client-side filtering by selected class and search
   const coursesList = rawCourses.filter((c) => {
-    if (statusChip !== 'All' && c.status !== statusChip) return false;
-    if (typeChip !== 'All types' && c.type !== typeChip) return false;
+    if (getCourseGrade(c) !== selectedClass) return false;
     if (currentSearch) {
       const q = currentSearch.toLowerCase();
       const match =
@@ -53,18 +64,126 @@ export function CoursesPage() {
     return true;
   });
 
-  const count = data?.count ?? coursesList.length;
+  const count = coursesList.length;
 
   const handleSearchClick = () => {
     setSearchQuery(searchInput);
     refetch();
   };
 
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    try {
+      await deleteCourseMutation.mutateAsync(courseToDelete.id);
+      addToast(`Subject "${courseToDelete.name}" deleted successfully.`);
+      setCourseToDelete(null);
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete subject', 'error');
+    }
+  };
+
+  const renderCourseCard = (c) => (
+    <div key={c.id} className="cd">
+      <div className="cd-top">
+        {c.coverImage ? (
+          <img
+            src={c.coverImage}
+            alt={c.name}
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              objectFit: 'cover',
+              flex: 'none',
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              if (e.currentTarget.nextElementSibling) {
+                e.currentTarget.nextElementSibling.style.display = 'flex';
+              }
+            }}
+          />
+        ) : null}
+        <span
+          className="tl"
+          style={{
+            display: c.coverImage ? 'none' : 'flex',
+            flexDirection: 'column',
+            fontSize: '13px',
+            lineHeight: '1.1',
+            background: 'rgba(70,140,190,.12)',
+            color: '#2A6E9C',
+            width: '44px',
+            height: '44px',
+            borderRadius: '12px',
+            placeItems: 'center',
+            justifyContent: 'center',
+            flex: 'none',
+          }}
+        >
+          <small style={{ fontSize: '7px' }}>{c.code}</small>
+          {c.shortCode}
+        </span>
+        <div className="cd-top-info">
+          <h3 className="cd-title" title={c.name}>{c.name}</h3>
+          <p className="cd-sub" title={c.teacher}>
+            <User size={13} strokeWidth={1.8} />
+            {c.teacher && c.teacher !== '—' ? c.teacher : 'No teacher assigned'}
+          </p>
+        </div>
+        <Tag color={c.isActive ? 'g' : 'a'} style={{ marginLeft: 'auto', flexShrink: 0 }}>
+          {c.status}
+        </Tag>
+      </div>
+
+      <div className="cd-tags">
+        {c.type && c.type !== '—' && <Tag color="b">{c.type}</Tag>}
+        {c.class && c.class !== '—' && <Tag>{c.class}</Tag>}
+        <Tag icon={<Users size={11} strokeWidth={1.8} style={{ marginRight: '4px' }} />}>
+          {c.enrolled || 0} enrolled
+        </Tag>
+      </div>
+
+      <div className="cd-body" style={{ minHeight: '38px' }}>
+        {c.description && c.description !== '—' ? (
+          c.description
+        ) : (
+          <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Standard academic curriculum subject.</span>
+        )}
+      </div>
+
+      <div className="cd-footer">
+        <span className="cd-meta" title={c.code}>
+          <BookOpen size={13} strokeWidth={1.8} />
+          <span>{c.code || 'Subject'}</span>
+        </span>
+        <div className="cd-actions">
+          <button
+            type="button"
+            className="cd-btn-delete"
+            onClick={() => setCourseToDelete(c)}
+            title="Delete Subject"
+            aria-label={`Delete ${c.name}`}
+          >
+            <Trash2 size={14} strokeWidth={1.8} />
+          </button>
+          <button
+            type="button"
+            className="cd-btn-view"
+            onClick={() => navigate(`/courses/${c.id}`)}
+          >
+            View Subject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div className="pt">
-        <h2>Courses</h2>
-        <p>Search, view, and manage the course catalog</p>
+        <h2>Subjects</h2>
+        <p>Search, view, and manage curriculum subjects for Class 6 to 8</p>
       </div>
 
       <SearchBar
@@ -75,26 +194,69 @@ export function CoursesPage() {
           setSearchQuery('');
         }}
         onSearch={handleSearchClick}
-        actionText="Add Course"
+        actionText="Add Subject"
         onAction={() => setIsModalOpen(true)}
       />
 
-      <Chips
-        items={['All', 'Active', 'Inactive']}
-        activeItem={statusChip}
-        onSelect={setStatusChip}
-      />
+      {/* Class / Grade Filter Tabs */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        {['Class 6', 'Class 7', 'Class 8'].map((cls) => {
+          const isSelected = selectedClass === cls;
+          const countForCls = rawCourses.filter((c) => {
+            if (getCourseGrade(c) !== cls) return false;
+            if (currentSearch) {
+              const q = currentSearch.toLowerCase();
+              return (
+                (c.name && c.name.toLowerCase().includes(q)) ||
+                (c.code && c.code.toLowerCase().includes(q)) ||
+                (c.class && c.class.toLowerCase().includes(q)) ||
+                (c.teacher && c.teacher.toLowerCase().includes(q))
+              );
+            }
+            return true;
+          }).length;
 
-      {/* "Optional" type is removed per spec */}
-      <Chips
-        items={['All types', 'Core', 'Elective']}
-        activeItem={typeChip}
-        onSelect={setTypeChip}
-      />
+          return (
+            <button
+              key={cls}
+              type="button"
+              onClick={() => setSelectedClass(cls)}
+              style={{
+                padding: '9px 20px',
+                borderRadius: '14px',
+                font: isSelected ? '700 13px Manrope, sans-serif' : '600 13px Manrope, sans-serif',
+                background: isSelected ? 'linear-gradient(135deg, var(--p1), var(--p2))' : 'var(--card)',
+                color: isSelected ? '#fff' : 'var(--ink)',
+                border: isSelected ? '1px solid transparent' : '1px solid var(--line)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: isSelected ? '0 6px 16px rgba(15, 59, 68, 0.25)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{cls}</span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '2px 7px',
+                  borderRadius: '8px',
+                  background: isSelected ? 'rgba(255, 255, 255, 0.22)' : 'var(--soft)',
+                  color: isSelected ? '#fff' : 'var(--mute)',
+                  fontWeight: 700,
+                }}
+              >
+                {countForCls}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <ViewToggle
         total={count}
-        label="courses"
+        label="subjects"
         mode={viewMode}
         onChange={setViewMode}
       />
@@ -107,7 +269,7 @@ export function CoursesPage() {
         </div>
       ) : isError ? (
         <div className="cd" style={{ textAlign: 'center', padding: '40px 20px', gap: '14px' }}>
-          <b style={{ color: '#C23A52' }}>Failed to load courses</b>
+          <b style={{ color: '#C23A52' }}>Failed to load subjects</b>
           <p style={{ color: 'var(--mute)' }}>{error?.message || 'Server error'}</p>
           <div>
             <button
@@ -121,74 +283,37 @@ export function CoursesPage() {
           </div>
         </div>
       ) : coursesList.length === 0 ? (
-        <EmptyState title="No courses found" description="Try a different search term or course type." />
+        <EmptyState
+          title={`No subjects found in ${selectedClass}`}
+          description={`There are currently no subjects listed for ${selectedClass}. Click "Add Subject" above to add one.`}
+        />
       ) : (
-        <div className={`gr ${viewMode === 'list' ? 'ls' : ''}`}>
-          {coursesList.map((c) => {
-            const hasMaterialsOrAssignments = c.materialsCount != null || c.assignmentsCount != null;
-            const hasQuizzesOrExams = c.quizzesCount != null || c.examsCount != null;
-
-            return (
-              <div key={c.id} className="cd">
-                <div className="row">
-                  <span
-                    className="tl"
-                    style={{
-                      flexDirection: 'column',
-                      fontSize: '13px',
-                      lineHeight: '1.1',
-                      background: 'rgba(70,140,190,.12)',
-                      color: '#2A6E9C',
-                    }}
-                  >
-                    <small style={{ fontSize: '7px' }}>{c.code}</small>
-                    {c.shortCode}
-                  </span>
-                  <div>
-                    <h3>{c.name}</h3>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <User size={14} strokeWidth={1.8} /> {c.teacher}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="row" style={{ flexWrap: 'wrap' }}>
-                  <Tag color={c.isActive ? 'g' : 'a'}>{c.status}</Tag>
-                  <Tag color="b">{c.type}</Tag>
-                  <Tag>{c.class}</Tag>
-                  <Tag>{c.enrolled} enrolled</Tag>
-                </div>
-
-                <p>{c.description}</p>
-
-                {hasMaterialsOrAssignments && (
-                  <p>
-                    {c.materialsCount || 0} materials · {c.assignmentsCount || 0} assignments
-                  </p>
-                )}
-
-                <div className="row">
-                  {hasQuizzesOrExams && (
-                    <span style={{ color: 'var(--mute)', fontSize: '12px' }}>
-                      {c.quizzesCount || 0} quizzes · {c.examsCount || 0} exams
-                    </span>
-                  )}
-                  <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                    <button
-                      type="button"
-                      className="ghost"
-                      style={{ margin: 0 }}
-                      onClick={() => navigate(`/courses/${c.id}`)}
-                    >
-                      View Course
-                    </button>
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <GraduationCap size={18} strokeWidth={2} style={{ color: 'var(--p1)' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+              {selectedClass} Curriculum
+            </h3>
+            <span className="tg b" style={{ fontSize: '11px' }}>
+              {coursesList.length} {coursesList.length === 1 ? 'Subject' : 'Subjects'}
+            </span>
+          </div>
+          <div className={`gr ${viewMode === 'list' ? 'ls' : ''}`}>
+            {coursesList.map(renderCourseCard)}
+          </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(courseToDelete)}
+        onClose={() => setCourseToDelete(null)}
+        onConfirm={handleDeleteCourse}
+        title="Delete Subject"
+        message={`Are you sure you want to delete "${courseToDelete?.name}" (${courseToDelete?.code})? This will unassign the subject from any linked class section. This action cannot be undone.`}
+        confirmText="Delete Subject"
+        confirmColor="#C23A52"
+        isLoading={deleteCourseMutation.isPending}
+      />
 
       <CourseModal
         isOpen={isModalOpen}

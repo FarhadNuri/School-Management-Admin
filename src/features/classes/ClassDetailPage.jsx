@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Calendar, User, Edit3, RotateCcw } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Calendar, User, Edit3, RotateCcw, Trash2 } from 'lucide-react';
 import {
   BackLink,
   Tag,
   InfoCard,
   Skeleton,
+  ClassImageTile,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
 import { ClassModal } from './ClassModal';
-import { useClass } from '../../hooks/queries';
+import { useClass, useDeleteClass } from '../../hooks/queries';
 
 export function ClassDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const { data: classData, isLoading, isError, error, refetch } = useClass(id);
+  const deleteClassMutation = useDeleteClass();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -65,14 +72,33 @@ export function ClassDetailPage() {
   }).filter(Boolean);
 
   const courseNames = (classData.courses || []).map((c) => {
-    return `${c.courseName || c.name || 'Course'} (${c.courseCode || c.code || ''})`;
+    return `${c.courseName || c.name || 'Subject'} (${c.courseCode || c.code || ''})`;
   });
+
+  const handleDeleteClass = async () => {
+    try {
+      await deleteClassMutation.mutateAsync(id);
+      addToast(`Class "${classData.name}" deleted successfully.`);
+      setIsDeleteOpen(false);
+      navigate('/classes');
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete class', 'error');
+    }
+  };
 
   return (
     <div>
       <div className="row" style={{ marginBottom: '14px' }}>
         <BackLink to="/classes" label="Back to classes" />
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{ margin: 0, color: '#C23A52', borderColor: 'rgba(194, 58, 82, 0.3)', height: '40px' }}
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            <Trash2 size={15} strokeWidth={1.8} /> Delete Class
+          </button>
           <button
             type="button"
             className="pb"
@@ -86,10 +112,13 @@ export function ClassDetailPage() {
 
       <div className="cd" style={{ marginBottom: '14px' }}>
         <div className="row" style={{ alignItems: 'flex-start', gap: '18px' }}>
-          <span className="dt" style={{ width: '64px', height: '64px', borderRadius: '18px', paddingTop: '10px' }}>
-            <small style={{ fontSize: '10px' }}>GRADE</small>
-            <b style={{ fontSize: '24px' }}>{classData.grade}</b>
-          </span>
+          <ClassImageTile
+            src={classData.coverImage}
+            grade={classData.grade}
+            size={64}
+            radius={18}
+            alt={classData.name}
+          />
           <div>
             <h2 style={{ fontSize: '30px' }}>{classData.name}</h2>
             <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -117,7 +146,7 @@ export function ClassDetailPage() {
           </b>
         </div>
         <div className="cd">
-          <small style={{ color: 'var(--mute)' }}>COURSES ASSIGNED</small>
+          <small style={{ color: 'var(--mute)' }}>SUBJECTS ASSIGNED</small>
           <b className="hd" style={{ fontSize: '20px' }}>
             {classData.coursesCount}
           </b>
@@ -136,10 +165,10 @@ export function ClassDetailPage() {
           ]}
         />
         <InfoCard
-          title="TEACHERS & COURSES"
+          title="TEACHERS & SUBJECTS"
           rows={[
             ['Assigned Teachers', teacherNames.length > 0 ? teacherNames.join(', ') : 'None assigned'],
-            ['Assigned Courses', courseNames.length > 0 ? courseNames.join(', ') : 'None assigned'],
+            ['Assigned Subjects', courseNames.length > 0 ? courseNames.join(', ') : 'None assigned'],
             ['Current Utilization', `${utilization}% (${enrolledNum}/${capacityNum})`],
           ]}
         />
@@ -162,6 +191,17 @@ export function ClassDetailPage() {
           ]}
         />
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteClass}
+        title="Delete Class"
+        message={`Are you sure you want to delete "${classData.name}"? This will unassign all teachers, subjects, and students associated with this class. This action cannot be undone.`}
+        confirmText="Delete Class"
+        confirmColor="#C23A52"
+        isLoading={deleteClassMutation.isPending}
+      />
 
       <ClassModal
         isOpen={isEditOpen}

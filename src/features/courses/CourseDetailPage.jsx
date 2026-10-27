@@ -1,24 +1,30 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { User, BookOpen, Edit3, RotateCcw } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { User, BookOpen, Edit3, RotateCcw, Trash2 } from 'lucide-react';
 import {
   BackLink,
   Tag,
   InfoCard,
   Skeleton,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
 import { CourseModal } from './CourseModal';
-import { useCourse } from '../../hooks/queries';
+import { useCourse, useDeleteCourse } from '../../hooks/queries';
 
 export function CourseDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const { data: course, isLoading, isError, error, refetch } = useCourse(id);
+  const deleteCourseMutation = useDeleteCourse();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (isLoading) {
     return (
       <div>
-        <BackLink to="/courses" label="Back to courses" />
+        <BackLink to="/courses" label="Back to subjects" />
         <div className="cd" style={{ padding: '24px', gap: '16px', marginTop: '12px' }}>
           <div className="row" style={{ gap: '18px' }}>
             <Skeleton width="64px" height="64px" borderRadius="18px" />
@@ -36,10 +42,10 @@ export function CourseDetailPage() {
   if (isError || !course) {
     return (
       <div>
-        <BackLink to="/courses" label="Back to courses" />
+        <BackLink to="/courses" label="Back to subjects" />
         <div className="cd" style={{ textAlign: 'center', padding: '40px 20px', gap: '14px', marginTop: '12px' }}>
-          <b style={{ color: '#C23A52' }}>Course record not found</b>
-          <p style={{ color: 'var(--mute)' }}>{error?.message || 'Could not load course details'}</p>
+          <b style={{ color: '#C23A52' }}>Subject record not found</b>
+          <p style={{ color: 'var(--mute)' }}>{error?.message || 'Could not load subject details'}</p>
           <div>
             <button
               type="button"
@@ -58,27 +64,66 @@ export function CourseDetailPage() {
   const hasMaterialsOrAssignments = course.materialsCount != null || course.assignmentsCount != null;
   const hasQuizzesOrExams = course.quizzesCount != null || course.examsCount != null;
 
+  const handleDeleteCourse = async () => {
+    try {
+      await deleteCourseMutation.mutateAsync(id);
+      addToast(`Subject "${course.name}" deleted successfully.`);
+      setIsDeleteOpen(false);
+      navigate('/courses');
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete subject', 'error');
+    }
+  };
+
   return (
     <div>
       <div className="row" style={{ marginBottom: '14px' }}>
-        <BackLink to="/courses" label="Back to courses" />
+        <BackLink to="/courses" label="Back to subjects" />
         <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{ margin: 0, color: '#C23A52', borderColor: 'rgba(194, 58, 82, 0.3)', height: '40px' }}
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            <Trash2 size={15} strokeWidth={1.8} /> Delete Subject
+          </button>
           <button
             type="button"
             className="pb"
             style={{ height: '40px' }}
             onClick={() => setIsEditOpen(true)}
           >
-            <Edit3 size={15} strokeWidth={1.8} /> Edit Course
+            <Edit3 size={15} strokeWidth={1.8} /> Edit Subject
           </button>
         </span>
       </div>
 
       <div className="cd" style={{ marginBottom: '14px' }}>
         <div className="row" style={{ alignItems: 'flex-start', gap: '18px' }}>
+          {course.coverImage ? (
+            <img
+              src={course.coverImage}
+              alt={course.name}
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
+                objectFit: 'cover',
+                flex: 'none',
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
           <span
             className="tl"
             style={{
+              display: course.coverImage ? 'none' : 'flex',
               width: '64px',
               height: '64px',
               borderRadius: '18px',
@@ -115,7 +160,7 @@ export function CourseDetailPage() {
           </b>
         </div>
         <div className="cd">
-          <small style={{ color: 'var(--mute)' }}>COURSE TYPE</small>
+          <small style={{ color: 'var(--mute)' }}>SUBJECT TYPE</small>
           <b className="hd" style={{ fontSize: '20px' }}>
             {course.type}
           </b>
@@ -130,9 +175,9 @@ export function CourseDetailPage() {
 
       <div className="k2">
         <InfoCard
-          title="COURSE SPECIFICATION"
+          title="SUBJECT SPECIFICATION"
           rows={[
-            ['Course Title', course.name],
+            ['Subject Title', course.name],
             ['Catalog Code', course.code],
             ['Assigned Section', course.class],
             ['Instructor', course.teacher],
@@ -141,7 +186,7 @@ export function CourseDetailPage() {
         <InfoCard
           title="CURRICULUM & SYLLABUS"
           rows={[
-            ['Course Type', course.type],
+            ['Subject Type', course.type],
             ['Status', course.status],
             ['Description', course.description],
           ]}
@@ -170,6 +215,17 @@ export function CourseDetailPage() {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteCourse}
+        title="Delete Subject"
+        message={`Are you sure you want to delete "${course.name}" (${course.code})? This will unassign the subject from any linked class section. This action cannot be undone.`}
+        confirmText="Delete Subject"
+        confirmColor="#C23A52"
+        isLoading={deleteCourseMutation.isPending}
+      />
 
       <CourseModal
         isOpen={isEditOpen}

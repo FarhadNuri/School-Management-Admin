@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import {
   GraduationCap,
   Users,
+  User,
   School,
   FileText,
   BookOpen,
   Calendar,
   Paperclip,
   Megaphone,
+  DollarSign,
   RotateCcw,
 } from 'lucide-react';
 import { IconStat, Skeleton } from '../../components/ui';
@@ -21,12 +23,14 @@ import { getCurrentUser } from '../../api/endpoints/auth';
 const ICON_MAP = {
   GraduationCap,
   Users,
+  User,
   School,
   FileText,
   BookOpen,
   Calendar,
   Paperclip,
   Megaphone,
+  DollarSign,
 };
 
 export function OverviewPage() {

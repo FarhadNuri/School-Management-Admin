@@ -1,4 +1,5 @@
 import api from '../client';
+import { buildFormData } from '../formData';
 import { adaptCourse, adaptCoursesList } from '../adapters/courseAdapter';
 
 export async function getCourses({ search = '', courseStatus, courseType, isActive } = {}) {
@@ -22,11 +23,25 @@ export async function getCourseById(id) {
 }
 
 export async function addCourse(data) {
-  const raw = await api.post('/courses', data);
+  const { coverImage, ...fields } = data;
+  const files = { coverImage };
+  const fd = buildFormData(fields, files);
+
+  const raw = await api.post('/courses', fd);
   return adaptCourse(raw.course || raw);
 }
 
 export async function updateCourse(id, data) {
-  const raw = await api.patch(`/courses/${id}`, data);
+  const { coverImage, ...fields } = data;
+  const files = { coverImage };
+  const fd = buildFormData(fields, files);
+
+  const raw = await api.patch(`/courses/${id}`, fd);
   return adaptCourse(raw.course || raw);
 }
+
+export async function deleteCourse(id) {
+  const raw = await api.delete(`/courses/${id}`);
+  return raw;
+}
+

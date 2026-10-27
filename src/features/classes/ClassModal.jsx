@@ -127,7 +127,7 @@ export function ClassModal({ isOpen, onClose, initialData = null }) {
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? 'Edit Class' : 'Add Class'}
-      subtitle="Configure class section details, assigned teachers, and courses."
+      subtitle="Configure class section details, assigned teachers, and subjects."
       width={600}
     >
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '14px' }}>
@@ -217,7 +217,7 @@ export function ClassModal({ isOpen, onClose, initialData = null }) {
 
         <div>
           <MultiSelectChips
-            label="ASSIGN COURSES"
+            label="ASSIGN SUBJECTS"
             options={coursesList.map((c) => ({
               id: c.id,
               name: `${c.name || c.courseName} (${c.code || c.courseCode})`,

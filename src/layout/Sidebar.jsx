@@ -16,14 +16,14 @@ import { logout } from '../services/auth';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
-  { to: '/complaints', label: 'Complaints', icon: FileText },
   { to: '/students', label: 'Students', icon: GraduationCap },
   { to: '/teachers', label: 'Teachers', icon: Users },
   { to: '/guardians', label: 'Guardians', icon: User },
   { to: '/classes', label: 'Classes', icon: School },
-  { to: '/courses', label: 'Courses', icon: BookOpen },
+  { to: '/courses', label: 'Subjects', icon: BookOpen },
   { to: '/announcements', label: 'Announcements', icon: Megaphone },
   { to: '/payments', label: 'Fees & Payments', icon: DollarSign },
+  { to: '/complaints', label: 'Complaints', icon: FileText },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
