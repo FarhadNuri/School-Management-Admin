@@ -10,7 +10,7 @@ const ROUTE_CONFIG = {
   '/teachers': { title: 'Teachers', subtitle: 'Faculty and staffing profiles' },
   '/guardians': { title: 'Guardians', subtitle: 'Parent and guardian records' },
   '/classes': { title: 'Classes', subtitle: 'Sections, grades, and schedules' },
-  '/courses': { title: 'Courses', subtitle: 'Curriculum and course catalog' },
+  '/courses': { title: 'Subjects', subtitle: 'Curriculum and subject catalog' },
   '/announcements': { title: 'Announcements', subtitle: 'School notices and updates' },
   '/payments': { title: 'Fees & Payments', subtitle: 'Billing and payment tracking' },
   '/profile': { title: 'Profile', subtitle: 'Your admin account settings' },
