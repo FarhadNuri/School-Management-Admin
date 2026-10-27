@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Trash2, Mail, Phone, Users, Heart } from 'lucide-react';
 import {
   SearchBar,
   Chips,
@@ -9,16 +9,22 @@ import {
   Avatar,
   EmptyState,
   CardSkeleton,
+  ConfirmModal,
+  useToast,
 } from '../../components/ui';
-import { useGuardians } from '../../hooks/queries';
+import { useGuardians, useDeleteGuardian } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
 
 export function GuardiansPage() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusChip, setStatusChip] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
+  const [guardianToDelete, setGuardianToDelete] = useState(null);
+
+  const deleteGuardianMutation = useDeleteGuardian();
 
   const debouncedSearch = useDebounce(searchInput, 400);
 
@@ -38,6 +44,17 @@ export function GuardiansPage() {
   const handleSearchClick = () => {
     setSearchQuery(searchInput);
     refetch();
+  };
+
+  const handleDeleteGuardian = async () => {
+    if (!guardianToDelete) return;
+    try {
+      await deleteGuardianMutation.mutateAsync(guardianToDelete.id);
+      addToast(`Guardian "${guardianToDelete.name}" deleted successfully.`);
+      setGuardianToDelete(null);
+    } catch (err) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to delete guardian', 'error');
+    }
   };
 
   return (
@@ -97,42 +114,76 @@ export function GuardiansPage() {
         <div className={`gr ${viewMode === 'list' ? 'ls' : ''}`}>
           {guardians.map((g, idx) => (
             <div key={g.id} className="cd">
-              <div className="row">
-                <Avatar index={idx + 2} size={42} src={g.photo} />
-                <div>
-                  <h3>{g.name}</h3>
-                  <p>{g.relationship}</p>
+              <div className="cd-top">
+                <Avatar index={idx + 2} size={44} radius={12} src={g.photo} />
+                <div className="cd-top-info">
+                  <h3 className="cd-title" title={g.name}>{g.name}</h3>
+                  <p className="cd-sub" title={g.relationship}>
+                    <Heart size={13} strokeWidth={1.8} />
+                    {g.relationship && g.relationship !== '—' ? g.relationship : 'Primary Guardian'}
+                  </p>
                 </div>
                 <Tag
                   color={g.isActive ? 'g' : 'a'}
-                  style={{ marginLeft: 'auto' }}
+                  style={{ marginLeft: 'auto', flexShrink: 0 }}
                 >
                   {g.status}
                 </Tag>
               </div>
 
-              <div className="row" style={{ flexWrap: 'wrap' }}>
-                <Tag>{g.phone}</Tag>
-                <Tag>{g.studentsCount}</Tag>
+              <div className="cd-tags">
+                {g.phone && g.phone !== '—' && (
+                  <Tag icon={<Phone size={11} strokeWidth={1.8} style={{ marginRight: '4px' }} />}>
+                    {g.phone}
+                  </Tag>
+                )}
+                {g.studentsCount && g.studentsCount !== '—' && (
+                  <Tag color="b" icon={<Users size={11} strokeWidth={1.8} style={{ marginRight: '4px' }} />}>
+                    {g.studentsCount}
+                  </Tag>
+                )}
+                {g.city && g.city !== '—' && <Tag>{g.city}</Tag>}
               </div>
 
-              <div className="row">
-                <span style={{ color: 'var(--mute)', fontSize: '12px' }}>{g.email}</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <div className="cd-footer">
+                <span className="cd-meta" title={g.email && g.email !== '—' ? g.email : ''}>
+                  <Mail size={13} strokeWidth={1.8} />
+                  <span>{g.email && g.email !== '—' ? g.email : 'No email'}</span>
+                </span>
+                <div className="cd-actions">
                   <button
                     type="button"
-                    className="ghost"
-                    style={{ margin: 0 }}
+                    className="cd-btn-delete"
+                    onClick={() => setGuardianToDelete(g)}
+                    title="Delete Guardian"
+                    aria-label={`Delete ${g.name}`}
+                  >
+                    <Trash2 size={14} strokeWidth={1.8} />
+                  </button>
+                  <button
+                    type="button"
+                    className="cd-btn-view"
                     onClick={() => navigate(`/guardians/${g.id}`)}
                   >
                     View Profile
                   </button>
-                </span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(guardianToDelete)}
+        onClose={() => setGuardianToDelete(null)}
+        onConfirm={handleDeleteGuardian}
+        title="Delete Guardian"
+        message={`Are you sure you want to permanently delete "${guardianToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete Guardian"
+        confirmColor="#C23A52"
+        isLoading={deleteGuardianMutation.isPending}
+      />
     </div>
   );
 }
