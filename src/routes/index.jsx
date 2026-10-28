@@ -1,3 +1,4 @@
+import { PublishGradesPage } from '../features/grades/PublishGradesPage';
 import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AdminGuard } from './AdminGuard';
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
           { path: '/', element: <OverviewPage /> },
           { path: '/complaints', element: <ComplaintsPage /> },
           { path: '/complaints/:id', element: <ComplaintDetailPage /> },
+          { path: '/publish-grades', element: <PublishGradesPage /> },
           { path: '/students', element: <StudentsPage /> },
           { path: '/students/:id', element: <StudentDetailPage /> },
           { path: '/teachers', element: <TeachersPage /> },
