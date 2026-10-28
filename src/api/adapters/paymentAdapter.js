@@ -15,8 +15,18 @@ export function adaptPayment(raw = {}) {
   const guardian = raw.guardian || {};
   const guardianUser = guardian.user || {};
 
-  const sName = `${studentUser.firstName || student.firstName || ''} ${studentUser.lastName || student.lastName || ''}`.trim() || 'Student';
-  const gName = `${guardianUser.firstName || guardian.firstName || ''} ${guardianUser.lastName || guardian.lastName || ''}`.trim() || 'Guardian';
+  const sName =
+    student.name ||
+    (typeof raw.student === 'string' && raw.student ? raw.student : '') ||
+    `${studentUser.firstName || student.firstName || ''} ${studentUser.lastName || student.lastName || ''}`.trim() ||
+    raw.studentName ||
+    'Student';
+  const gName =
+    guardian.name ||
+    (typeof raw.guardian === 'string' && raw.guardian ? raw.guardian : '') ||
+    `${guardianUser.firstName || guardian.firstName || ''} ${guardianUser.lastName || guardian.lastName || ''}`.trim() ||
+    raw.guardianName ||
+    'Guardian';
 
   const statusKey = String(raw.statusKey || raw.status || 'unpaid').toLowerCase();
   const isPaid = statusKey === 'paid';
@@ -54,7 +64,7 @@ export function adaptPayment(raw = {}) {
     student: sName,
     studentId: String(student._id || student.id || ''),
     guardian: gName,
-    guardianEmail: guardianUser.email || '',
+    guardianEmail: guardianUser.email || guardian.email || '',
     title: raw.title || 'Invoice',
     feeType: PURPOSE_LABELS[raw.purpose] || raw.purpose || 'Tuition',
     purpose: raw.purpose || 'tuition',
