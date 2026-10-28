@@ -10,6 +10,7 @@ import {
   BookOpen,
   Megaphone,
   DollarSign,
+  Award,
   LogOut,
 } from 'lucide-react';
 import { logout } from '../services/auth';
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { to: '/announcements', label: 'Announcements', icon: Megaphone },
   { to: '/payments', label: 'Fees & Payments', icon: DollarSign },
   { to: '/complaints', label: 'Complaints', icon: FileText },
+  { to: '/publish-grades', label: 'Publish Grades', icon: Award },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
