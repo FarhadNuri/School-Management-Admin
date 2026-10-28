@@ -56,7 +56,6 @@ export function AnnouncementsPage() {
   const { addToast } = useToast();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [priorityChip, setPriorityChip] = useState('All');
   const [categoryChip, setCategoryChip] = useState('All categories');
   const [viewMode, setViewMode] = useState('grid');
 
@@ -80,7 +79,6 @@ export function AnnouncementsPage() {
   const debouncedSearch = useDebounce(searchInput, 400);
   const currentSearch = searchQuery !== '' ? searchQuery : debouncedSearch;
 
-  const severityParam = priorityChip === 'All' ? undefined : priorityChip.toLowerCase();
   const categoryParam =
     categoryChip === 'All categories' || categoryChip === 'All'
       ? undefined
@@ -89,7 +87,6 @@ export function AnnouncementsPage() {
   const { data, isLoading, isError, error, refetch } = useAnnouncements({
     search: currentSearch,
     category: categoryParam,
-    severity: severityParam,
   });
 
   const createMutation = useCreateAnnouncement();
@@ -114,7 +111,6 @@ export function AnnouncementsPage() {
 
   // Fallback client-side filter
   const announcements = rawList.filter((a) => {
-    if (severityParam && a.rawSeverity !== severityParam) return false;
     if (categoryParam && a.rawCategory !== categoryParam) return false;
     if (currentSearch) {
       const q = currentSearch.toLowerCase();
@@ -236,12 +232,6 @@ export function AnnouncementsPage() {
         onSearch={handleSearchClick}
         actionText="New announcement"
         onAction={openCreateModal}
-      />
-
-      <Chips
-        items={['All', 'High', 'Medium', 'Low']}
-        activeItem={priorityChip}
-        onSelect={setPriorityChip}
       />
 
       <Chips

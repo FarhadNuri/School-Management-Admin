@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { RotateCcw, Send, XCircle } from 'lucide-react';
 import {
   SearchBar,
-  FilterDropdown,
   Chips,
   StatCard,
   ViewToggle,
@@ -23,21 +22,10 @@ import {
 } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
 
-const FEE_TYPE_OPTIONS = [
-  'All fee types',
-  'Tuition',
-  'Exam fee',
-  'Uniform',
-  'Transport',
-  'Books',
-  'Other',
-];
-
 export function PaymentsPage() {
   const { addToast } = useToast();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [feeType, setFeeType] = useState('All fee types');
   const [statusChip, setStatusChip] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
 
@@ -60,12 +48,9 @@ export function PaymentsPage() {
       ? 'Overdue'
       : undefined;
 
-  const apiPurposeParam = feeType === 'All fee types' ? undefined : feeType;
-
   const { data, isLoading, isError, error, refetch } = usePayments({
     search: currentSearch,
     status: apiStatusParam,
-    purpose: apiPurposeParam,
   });
 
   const resendMutation = useResendInvoice();
@@ -82,10 +67,6 @@ export function PaymentsPage() {
     if (statusChip === 'Paid' && !p.isPaid) return false;
     if (statusChip === 'Pending' && p.isPaid) return false;
     if (statusChip === 'Overdue' && !p.isOverdue) return false;
-
-    if (feeType !== 'All fee types' && p.feeType.toLowerCase() !== feeType.toLowerCase()) {
-      return false;
-    }
 
     if (currentSearch) {
       const q = currentSearch.toLowerCase();
@@ -156,14 +137,6 @@ export function PaymentsPage() {
         onSearch={handleSearchClick}
         actionText="Create invoice"
         onAction={() => setIsCreateModalOpen(true)}
-        filterElement={
-          <FilterDropdown
-            label="FEE TYPE"
-            value={feeType}
-            options={FEE_TYPE_OPTIONS}
-            onChange={setFeeType}
-          />
-        }
       />
 
       <Chips

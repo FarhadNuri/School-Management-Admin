@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, RotateCcw, Trash2 } from 'lucide-react';
 import {
   SearchBar,
-  FilterDropdown,
   Chips,
   StatCard,
   ViewToggle,
@@ -26,7 +25,6 @@ export function ComplaintsPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
-  const [urgency, setUrgency] = useState('All urgencies');
   const [statusChip, setStatusChip] = useState('All');
   const [viewMode, setViewMode] = useState('grid');
   const [complaintToDelete, setComplaintToDelete] = useState(null);
@@ -74,12 +72,7 @@ export function ComplaintsPage() {
           c.status === 'Under Review')) ||
       (statusChip === 'Resolved' && (c.statusKey === 'resolved' || c.status === 'Resolved'));
 
-    const matchUrgency =
-      urgency === 'All urgencies' ||
-      c.severity.toLowerCase() === urgency.toLowerCase() ||
-      c.severityKey === urgency.toLowerCase();
-
-    return matchSearch && matchStatus && matchUrgency;
+    return matchSearch && matchStatus;
   });
 
   const handleDeleteComplaint = async () => {
@@ -105,14 +98,6 @@ export function ComplaintsPage() {
         value={search}
         onChange={setSearch}
         onSearch={() => {}}
-        filterElement={
-          <FilterDropdown
-            label="URGENCY"
-            value={urgency}
-            options={['All urgencies', 'High', 'Medium', 'Low']}
-            onChange={setUrgency}
-          />
-        }
       />
 
       <Chips
