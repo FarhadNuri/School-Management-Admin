@@ -24,7 +24,7 @@ export function adaptGuardian(raw = {}) {
     name: fullName,
     firstName,
     lastName,
-    photo: resolvePhoto(user.photo),
+    photo: resolvePhoto(user.photo) || '/Guardians.jpg',
     email: user.email || '—',
     phone: user.contactInfo?.phone || '—',
     altPhone: user.contactInfo?.altPhone || '—',
