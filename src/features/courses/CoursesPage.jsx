@@ -15,16 +15,43 @@ import { useCourses, useDeleteCourse } from '../../hooks/queries';
 import { useDebounce } from '../../hooks/useDebounce';
 
 function getCourseGrade(course) {
-  if (course.grade) {
-    const g = String(course.grade).trim();
-    if (g.includes('6')) return 'Class 6';
-    if (g.includes('7')) return 'Class 7';
+  // 1. Check explicit grade field from class
+  if (course.grade != null && String(course.grade).trim() !== '' && course.grade !== '—') {
+    const g = String(course.grade).trim().toLowerCase();
+    if (/\b8\b/.test(g) || g.includes('eight')) return 'Class 8';
+    if (/\b7\b/.test(g) || g.includes('seven')) return 'Class 7';
+    if (/\b6\b/.test(g) || g.includes('six')) return 'Class 6';
     if (g.includes('8')) return 'Class 8';
+    if (g.includes('7')) return 'Class 7';
+    if (g.includes('6')) return 'Class 6';
   }
-  const text = `${course.class || ''} ${course.name || ''} ${course.code || ''}`.toLowerCase();
-  if (text.includes('6') || text.includes('six')) return 'Class 6';
-  if (text.includes('7') || text.includes('seven')) return 'Class 7';
-  if (text.includes('8') || text.includes('eight')) return 'Class 8';
+
+  // 2. Check course.class / course.className (the assigned class section name, e.g. "Grade 8 A", "Class 8")
+  const clsText = `${course.class || ''} ${course.className || ''}`.trim().toLowerCase();
+  if (clsText && clsText !== '—') {
+    if (/\b8\b/.test(clsText) || clsText.includes('eight')) return 'Class 8';
+    if (/\b7\b/.test(clsText) || clsText.includes('seven')) return 'Class 7';
+    if (/\b6\b/.test(clsText) || clsText.includes('six')) return 'Class 6';
+    if (clsText.includes('8')) return 'Class 8';
+    if (clsText.includes('7')) return 'Class 7';
+    if (clsText.includes('6')) return 'Class 6';
+  }
+
+  // 3. Fallback: only check course.name if no class was assigned (do NOT blindly match digits in course.code like "106")
+  const nameText = `${course.name || ''}`.trim().toLowerCase();
+  if (nameText && nameText !== '—') {
+    if (/\b8\b/.test(nameText) || nameText.includes('eight')) return 'Class 8';
+    if (/\b7\b/.test(nameText) || nameText.includes('seven')) return 'Class 7';
+    if (/\b6\b/.test(nameText) || nameText.includes('six')) return 'Class 6';
+  }
+
+  // 4. Last resort: check if course.code has an explicit class indicator (e.g. "CLS8-..." or "C8-...")
+  const codeText = `${course.code || ''}`.trim().toLowerCase();
+  if (codeText && codeText !== '—') {
+    const codeMatch = codeText.match(/(?:c|cls|grade|class)\s*([678])\b/i);
+    if (codeMatch) return `Class ${codeMatch[1]}`;
+  }
+
   return 'Other';
 }
 
@@ -318,6 +345,7 @@ export function CoursesPage() {
       <CourseModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        defaultGrade={selectedClass}
       />
     </div>
   );
