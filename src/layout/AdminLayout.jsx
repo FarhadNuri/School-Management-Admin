@@ -36,7 +36,7 @@ export function AdminLayout() {
 
   const config = ROUTE_CONFIG[baseRoute] || {
     title: 'Dashboard',
-    subtitle: 'Northfield School Management',
+    subtitle: 'Sunrise Model School Management',
   };
 
   return (

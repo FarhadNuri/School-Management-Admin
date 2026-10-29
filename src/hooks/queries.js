@@ -8,6 +8,7 @@ import { getAnnouncements, getAnnouncementById, addAnnouncement, updateAnnouncem
 import { getComplaints, getComplaintById, updateComplaintStatus, deleteComplaint } from '../api/endpoints/complaints';
 import { useToast } from '../components/ui';
 import { getPayments, getPaymentById, createInvoice, resendInvoice, cancelInvoice } from '../api/endpoints/payments';
+import { getRoutines, getRoutineById, updateRoutine, createRoutine } from '../api/endpoints/routines';
 
 // ================= STUDENTS =================
 export function useStudents(params) {
@@ -455,3 +456,41 @@ export function useCancelInvoice() {
     },
   });
 }
+
+// ================= ROUTINES =================
+export function useRoutines(params) {
+  return useQuery({
+    queryKey: ['routines', params],
+    queryFn: () => getRoutines(params),
+  });
+}
+
+export function useRoutine(id) {
+  return useQuery({
+    queryKey: ['routines', id],
+    queryFn: () => getRoutineById(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useUpdateRoutine() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => updateRoutine(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['routines'] });
+      queryClient.invalidateQueries({ queryKey: ['routines', variables.id] });
+    },
+  });
+}
+
+export function useCreateRoutine() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createRoutine,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['routines'] });
+    },
+  });
+}
+

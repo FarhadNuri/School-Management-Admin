@@ -11,6 +11,7 @@ import {
   Megaphone,
   DollarSign,
   Award,
+  Calendar,
   LogOut,
 } from 'lucide-react';
 import { logout } from '../services/auth';
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { to: '/teachers', label: 'Teachers', icon: Users },
   { to: '/guardians', label: 'Guardians', icon: User },
   { to: '/classes', label: 'Classes', icon: School },
+  { to: '/routines', label: 'Routines', icon: Calendar },
   { to: '/courses', label: 'Subjects', icon: BookOpen },
   { to: '/announcements', label: 'Announcements', icon: Megaphone },
   { to: '/payments', label: 'Fees & Payments', icon: DollarSign },
@@ -39,7 +41,7 @@ export function Sidebar({ isOpen, onClose }) {
   return (
     <aside className={`sb ${isOpen ? 'open' : ''}`} id="sb">
       <div className="logo">
-        <b>Northfield</b>
+        <b>Sunrise</b>
         <small>ADMIN</small>
       </div>
 
