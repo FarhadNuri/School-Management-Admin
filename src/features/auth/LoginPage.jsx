@@ -109,7 +109,7 @@ export function LoginPage() {
               letterSpacing: '-0.02em',
             }}
           >
-            Northfield
+            Sunrise
           </h1>
 
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
@@ -413,7 +413,7 @@ export function LoginPage() {
             <span>256-bit Encrypted Session · Protected Portal</span>
           </div>
           <span style={{ fontSize: '11.5px', color: 'var(--mute)', opacity: 0.75 }}>
-            Northfield School Management System
+            Sunrise Model School Management System
           </span>
         </div>
       </div>
