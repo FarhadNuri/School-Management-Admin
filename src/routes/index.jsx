@@ -20,6 +20,7 @@ import { CourseDetailPage } from '../features/courses/CourseDetailPage';
 import { AnnouncementsPage } from '../features/announcements/AnnouncementsPage';
 import { PaymentsPage } from '../features/payments/PaymentsPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
+import { RoutinesPage } from '../features/routines/RoutinesPage';
 
 export const router = createBrowserRouter([
   {
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
           { path: '/guardians/:id', element: <GuardianDetailPage /> },
           { path: '/classes', element: <ClassesPage /> },
           { path: '/classes/:id', element: <ClassDetailPage /> },
+          { path: '/routines', element: <RoutinesPage /> },
           { path: '/courses', element: <CoursesPage /> },
           { path: '/courses/:id', element: <CourseDetailPage /> },
           { path: '/announcements', element: <AnnouncementsPage /> },
