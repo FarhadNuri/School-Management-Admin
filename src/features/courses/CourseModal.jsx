@@ -10,7 +10,7 @@ import {
 } from '../../components/ui';
 import { useCreateCourse, useUpdateCourse, useClasses, useTeachers } from '../../hooks/queries';
 
-export function CourseModal({ isOpen, onClose, initialData = null }) {
+export function CourseModal({ isOpen, onClose, initialData = null, defaultGrade = null }) {
   const isEdit = Boolean(initialData?.id);
   const { addToast } = useToast();
   const createCourseMutation = useCreateCourse();
@@ -47,19 +47,32 @@ export function CourseModal({ isOpen, onClose, initialData = null }) {
         courseTeachers: initialData.teacherIds || [],
       });
     } else {
+      let initialClassId = classesList[0]?.id || '';
+      if (defaultGrade) {
+        const matched = classesList.find((c) => {
+          const g = String(c.grade || '').trim().toLowerCase();
+          const name = `${c.name || ''} ${c.className || ''}`.toLowerCase();
+          if (defaultGrade.includes('8') && (g === '8' || /\b8\b/.test(name))) return true;
+          if (defaultGrade.includes('7') && (g === '7' || /\b7\b/.test(name))) return true;
+          if (defaultGrade.includes('6') && (g === '6' || /\b6\b/.test(name))) return true;
+          return false;
+        });
+        if (matched) initialClassId = matched.id;
+      }
+
       setFormData({
         courseName: '',
         courseCode: '',
         courseDescription: '',
         courseType: 'Core',
         courseStatus: 'Active',
-        courseClass: classesList[0]?.id || '',
+        courseClass: initialClassId,
         courseTeachers: [],
       });
     }
     setCoverImage(null);
     setErrors({});
-  }, [initialData, isOpen, classesList.length]);
+  }, [initialData, isOpen, classesList.length, defaultGrade]);
 
   const updateField = (field, val) => {
     setFormData((p) => ({ ...p, [field]: val }));
