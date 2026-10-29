@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'northfield_admin_theme';
+const STORAGE_KEY = 'sunrise_admin_theme';
 
 export function useTheme() {
   const [theme, setThemeState] = useState(() => {
