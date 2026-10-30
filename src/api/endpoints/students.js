@@ -44,7 +44,17 @@ export async function addStudent(data) {
 
   const fd = buildFormData(fields, files);
   const res = await api.post('/students', fd);
-  return adaptStudent(res.student || res);
+  return {
+    student: adaptStudent(res.student || res),
+    credentials: res.credentials || null,
+    emailSent: res.emailSent,
+    message: res.message,
+  };
+}
+
+export async function resetStudentPassword(id) {
+  const res = await api.patch(`/students/${id}/reset-password`);
+  return res;
 }
 
 export async function updateStudent(id, data) {

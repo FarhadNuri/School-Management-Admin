@@ -7,6 +7,7 @@ import {
   MultiSelectChips,
   FileInput,
   FieldError,
+  CredentialsModal,
   useToast,
 } from '../../components/ui';
 import { useCreateTeacher, useUpdateTeacher, useClasses } from '../../hooks/queries';
@@ -49,6 +50,8 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState({});
+  const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [createdEmailSent, setCreatedEmailSent] = useState(false);
 
   const [form, setForm] = useState({
     firstName: '',
@@ -351,13 +354,20 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
       if (isEdit) {
         await updateTeacherMutation.mutateAsync({ id: initialData.id, data: payload });
         addToast('Teacher record updated successfully.');
+        onClose();
+        setCurrentStep(0);
       } else {
-        await createTeacherMutation.mutateAsync(payload);
-        addToast('Teacher enrolled successfully.');
+        const res = await createTeacherMutation.mutateAsync(payload);
+        if (res?.credentials) {
+          setCreatedCredentials(res.credentials);
+          setCreatedEmailSent(Boolean(res.emailSent));
+          addToast('Teacher enrolled successfully.');
+        } else {
+          addToast('Teacher enrolled successfully.');
+          onClose();
+          setCurrentStep(0);
+        }
       }
-
-      onClose();
-      setCurrentStep(0);
     } catch (err) {
       console.error('Enroll teacher failed:', err);
       const msg = err?.message || err?.error || 'Failed to save teacher record';
@@ -374,7 +384,8 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
   const isPending = createTeacherMutation.isPending || updateTeacherMutation.isPending;
 
   return (
-    <WizardModal
+    <>
+      <WizardModal
       isOpen={isOpen}
       onClose={() => {
         onClose();
@@ -706,5 +717,20 @@ export function EnrollTeacherWizard({ isOpen, onClose, initialData = null }) {
         </>
       )}
     </WizardModal>
+    {createdCredentials && (
+      <CredentialsModal
+        isOpen={Boolean(createdCredentials)}
+        onClose={() => {
+          setCreatedCredentials(null);
+          onClose();
+          setCurrentStep(0);
+        }}
+        title="Teacher Enrolled Successfully"
+        subtitle="Login credentials have been generated for the newly enrolled teacher."
+        credentials={createdCredentials}
+        emailSent={createdEmailSent}
+      />
+    )}
+    </>
   );
 }

@@ -26,3 +26,4 @@ export { FieldError } from './FieldError';
 export { MultiSelectChips } from './MultiSelectChips';
 export { FileInput } from './FileInput';
 export { ClassImageTile } from './ClassImageTile';
+export { CredentialsModal } from './CredentialsModal';
