@@ -58,7 +58,17 @@ export async function addTeacher(data) {
     }
   }
 
-  return teacher;
+  return {
+    teacher,
+    credentials: res.credentials || null,
+    emailSent: res.emailSent,
+    message: res.message,
+  };
+}
+
+export async function resetTeacherPassword(id) {
+  const res = await api.patch(`/teachers/${id}/reset-password`);
+  return res;
 }
 
 export async function updateTeacher(id, data) {

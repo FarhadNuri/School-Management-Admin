@@ -6,6 +6,7 @@ import {
   CheckboxCard,
   FileInput,
   FieldError,
+  CredentialsModal,
   useToast,
 } from '../../components/ui';
 import { useCreateStudent, useUpdateStudent, useClasses, useGuardians } from '../../hooks/queries';
@@ -36,6 +37,8 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState({});
+  const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [createdEmailSent, setCreatedEmailSent] = useState(false);
 
   // Guardian search state
   const [guardianSearch, setGuardianSearch] = useState('');
@@ -553,11 +556,18 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
       if (isEdit) {
         await updateStudentMutation.mutateAsync({ id: initialData.id, data: payload });
         addToast('Student record updated successfully.');
+        onClose();
       } else {
-        await createStudentMutation.mutateAsync(payload);
-        addToast('Student enrolled successfully.');
+        const res = await createStudentMutation.mutateAsync(payload);
+        if (res?.credentials) {
+          setCreatedCredentials(res.credentials);
+          setCreatedEmailSent(Boolean(res.emailSent));
+          addToast('Student enrolled successfully.');
+        } else {
+          addToast('Student enrolled successfully.');
+          onClose();
+        }
       }
-      onClose();
     } catch (err) {
       addToast(err?.message || 'Operation failed. Please review the inputs.', 'error');
     }
@@ -566,7 +576,8 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
   const isSubmitting = createStudentMutation.isPending || updateStudentMutation.isPending;
 
   return (
-    <WizardModal
+    <>
+      <WizardModal
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? 'Edit Student' : 'Enroll Student'}
@@ -1049,5 +1060,19 @@ export function EnrollStudentWizard({ isOpen, onClose, initialData = null }) {
         </>
       )}
     </WizardModal>
+    {createdCredentials && (
+      <CredentialsModal
+        isOpen={Boolean(createdCredentials)}
+        onClose={() => {
+          setCreatedCredentials(null);
+          onClose();
+        }}
+        title="Student Enrolled Successfully"
+        subtitle="Login credentials have been generated for the newly enrolled student and guardian."
+        credentials={createdCredentials}
+        emailSent={createdEmailSent}
+      />
+    )}
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getStudents, getStudentById, addStudent, updateStudent, setStudentStatus, deleteStudent } from '../api/endpoints/students';
-import { getTeachers, getTeacherById, addTeacher, updateTeacher, setTeacherStatus, deleteTeacher } from '../api/endpoints/teachers';
+import { getStudents, getStudentById, addStudent, updateStudent, setStudentStatus, deleteStudent, resetStudentPassword } from '../api/endpoints/students';
+import { getTeachers, getTeacherById, addTeacher, updateTeacher, setTeacherStatus, deleteTeacher, resetTeacherPassword } from '../api/endpoints/teachers';
 import { getGuardians, getGuardianById, updateGuardian, setGuardianStatus, deleteGuardian } from '../api/endpoints/guardians';
 import { getClasses, getClassById, addClass, updateClass, deleteClass } from '../api/endpoints/classes';
 import { getCourses, getCourseById, addCourse, updateCourse, deleteCourse } from '../api/endpoints/courses';
@@ -75,6 +75,16 @@ export function useDeleteStudent() {
   });
 }
 
+export function useResetStudentPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => resetStudentPassword(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['students', id] });
+    },
+  });
+}
+
 // ================= TEACHERS =================
 export function useTeachers(params) {
   return useQuery({
@@ -135,6 +145,16 @@ export function useDeleteTeacher() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['classes'] });
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}
+
+export function useResetTeacherPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => resetTeacherPassword(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['teachers', id] });
     },
   });
 }

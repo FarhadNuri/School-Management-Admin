@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Mail, Phone, MessageSquare, Globe, Ban, CheckCircle, Edit3, RotateCcw, ExternalLink, Trash2 } from 'lucide-react';
+import { Mail, Phone, MessageSquare, Globe, Ban, CheckCircle, Edit3, RotateCcw, ExternalLink, Trash2, Key } from 'lucide-react';
 import {
   BackLink,
   Avatar,
   Tag,
   InfoCard,
   ConfirmModal,
+  CredentialsModal,
   Skeleton,
   useToast,
 } from '../../components/ui';
 import { EnrollTeacherWizard } from './EnrollTeacherWizard';
-import { useTeacher, useSetTeacherStatus, useDeleteTeacher, useCourses } from '../../hooks/queries';
+import { useTeacher, useSetTeacherStatus, useDeleteTeacher, useResetTeacherPassword, useCourses } from '../../hooks/queries';
 
 export function TeacherDetailPage() {
   const { id } = useParams();
@@ -22,10 +23,26 @@ export function TeacherDetailPage() {
   const allCourses = coursesData?.courses || [];
   const setStatusMutation = useSetTeacherStatus();
   const deleteTeacherMutation = useDeleteTeacher();
+  const resetPasswordMutation = useResetTeacherPassword();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [resetCredentials, setResetCredentials] = useState(null);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
+  const handleResetPassword = async () => {
+    try {
+      const res = await resetPasswordMutation.mutateAsync(teacher.id);
+      if (res?.credentials) {
+        setResetCredentials(res.credentials);
+        setResetEmailSent(Boolean(res.emailSent));
+        addToast('Teacher password reset successfully.');
+      }
+    } catch (err) {
+      addToast(err?.message || 'Failed to reset password', 'error');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -132,6 +149,15 @@ export function TeacherDetailPage() {
                 <CheckCircle size={15} strokeWidth={1.8} /> Activate
               </>
             )}
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            style={{ margin: 0, height: '40px' }}
+            onClick={handleResetPassword}
+            disabled={resetPasswordMutation.isPending}
+          >
+            <Key size={15} strokeWidth={1.8} /> {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
           </button>
           <button
             type="button"
@@ -429,6 +455,17 @@ export function TeacherDetailPage() {
         onClose={() => setIsEditOpen(false)}
         initialData={teacher}
       />
+
+      {resetCredentials && (
+        <CredentialsModal
+          isOpen={Boolean(resetCredentials)}
+          onClose={() => setResetCredentials(null)}
+          title="Password Reset Successful"
+          subtitle="A new temporary password has been generated for this teacher."
+          credentials={resetCredentials}
+          emailSent={resetEmailSent}
+        />
+      )}
     </div>
   );
 }
