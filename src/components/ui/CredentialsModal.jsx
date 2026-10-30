@@ -22,7 +22,6 @@ export function CredentialsModal({
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 2000);
     } catch {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
@@ -65,84 +64,125 @@ export function CredentialsModal({
   const renderAccountCard = (account, typeKey, label, color) => {
     if (!account) return null;
     const isVisible = Boolean(showPassword[typeKey]);
-    const isCopied = copiedKey === typeKey;
 
     return (
       <div
         className="cd"
         style={{
           padding: '16px',
-          background: 'var(--bg, #f8f9fa)',
-          borderRadius: '14px',
-          border: '1px solid var(--border, #e5e7eb)',
+          background: 'var(--soft)',
+          borderRadius: '16px',
+          border: '1px solid var(--line)',
           display: 'grid',
           gap: '12px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={16} strokeWidth={2} />
-            <b style={{ fontSize: '14px' }}>{account.name || label}</b>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ink)' }}>
+            <User size={16} strokeWidth={2.2} />
+            <b style={{ fontSize: '15px' }}>{account.name || label}</b>
           </div>
           <Tag color={color}>{label}</Tag>
         </div>
 
-        <div style={{ display: 'grid', gap: '8px', fontSize: '13px' }}>
+        <div style={{ display: 'grid', gap: '8px' }}>
+          {/* Email row */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: 'var(--card-bg, #ffffff)',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid var(--border, #e5e7eb)',
+              background: 'var(--card)',
+              padding: '10px 14px',
+              borderRadius: '12px',
+              border: '1px solid var(--line)',
+              gap: '10px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-              <Mail size={14} color="var(--mute, #6b7280)" />
-              <span style={{ fontWeight: 500, wordBreak: 'break-all' }}>{account.email}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1 }}>
+              <Mail size={15} color="var(--mute)" style={{ flexShrink: 0 }} />
+              <span
+                style={{
+                  color: 'var(--ink)',
+                  fontWeight: 600,
+                  fontSize: '13.5px',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {account.email}
+              </span>
             </div>
             <button
               type="button"
               className="ghost"
-              style={{ padding: '4px 8px', margin: 0, height: 'auto', fontSize: '12px' }}
+              style={{
+                padding: '6px 10px',
+                margin: 0,
+                height: 'auto',
+                fontSize: '12px',
+                color: 'var(--ink)',
+                borderColor: 'var(--line)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
               onClick={() => copyToClipboard(account.email, `${typeKey}-email`)}
               title="Copy Email"
             >
-              {copiedKey === `${typeKey}-email` ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+              {copiedKey === `${typeKey}-email` ? (
+                <>
+                  <Check size={14} color="#10B981" />
+                  <span style={{ color: '#10B981', fontSize: '11px', fontWeight: 600 }}>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  <span style={{ fontSize: '11px' }}>Copy</span>
+                </>
+              )}
             </button>
           </div>
 
+          {/* Password row */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: 'var(--card-bg, #ffffff)',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid var(--border, #e5e7eb)',
+              background: 'var(--card)',
+              padding: '10px 14px',
+              borderRadius: '12px',
+              border: '1px solid var(--line)',
+              gap: '10px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Key size={14} color="var(--mute, #6b7280)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, overflow: 'hidden' }}>
+              <Key size={15} color="var(--mute)" style={{ flexShrink: 0 }} />
               <code
                 style={{
                   fontFamily: 'monospace',
-                  fontWeight: 600,
-                  fontSize: '14px',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  color: 'var(--ink)',
                   letterSpacing: isVisible ? '0.5px' : '2px',
+                  userSelect: 'all',
                 }}
               >
                 {isVisible ? account.password : '••••••••••••'}
               </code>
             </div>
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', gap: '6px' }}>
               <button
                 type="button"
                 className="ghost"
-                style={{ padding: '4px 8px', margin: 0, height: 'auto', fontSize: '12px' }}
+                style={{
+                  padding: '6px 10px',
+                  margin: 0,
+                  height: 'auto',
+                  fontSize: '12px',
+                  color: 'var(--ink)',
+                  borderColor: 'var(--line)',
+                }}
                 onClick={() => togglePassword(typeKey)}
                 title={isVisible ? 'Hide Password' : 'Show Password'}
               >
@@ -151,11 +191,31 @@ export function CredentialsModal({
               <button
                 type="button"
                 className="ghost"
-                style={{ padding: '4px 8px', margin: 0, height: 'auto', fontSize: '12px' }}
+                style={{
+                  padding: '6px 10px',
+                  margin: 0,
+                  height: 'auto',
+                  fontSize: '12px',
+                  color: 'var(--ink)',
+                  borderColor: 'var(--line)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
                 onClick={() => copyToClipboard(account.password, `${typeKey}-pass`)}
                 title="Copy Password"
               >
-                {copiedKey === `${typeKey}-pass` ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+                {copiedKey === `${typeKey}-pass` ? (
+                  <>
+                    <Check size={14} color="#10B981" />
+                    <span style={{ color: '#10B981', fontSize: '11px', fontWeight: 600 }}>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} />
+                    <span style={{ fontSize: '11px' }}>Copy</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -173,15 +233,15 @@ export function CredentialsModal({
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              background: 'rgba(35, 137, 91, 0.15)',
+              border: '1px solid rgba(35, 137, 91, 0.35)',
               fontSize: '13px',
-              color: '#065F46',
+              color: '#34D399',
             }}
           >
-            <CheckCircle size={18} color="#10B981" />
+            <CheckCircle size={18} color="#10B981" style={{ flexShrink: 0 }} />
             <span>Credentials have also been dispatched to the user's email address.</span>
           </div>
         ) : (
@@ -190,15 +250,15 @@ export function CredentialsModal({
               display: 'flex',
               alignItems: 'flex-start',
               gap: '10px',
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              fontSize: '12.5px',
-              color: '#92400E',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              background: 'rgba(245, 158, 108, 0.12)',
+              border: '1px solid rgba(245, 158, 108, 0.35)',
+              fontSize: '13px',
+              color: '#F59E6C',
             }}
           >
-            <AlertTriangle size={18} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <AlertTriangle size={18} color="#F59E6C" style={{ flexShrink: 0, marginTop: '2px' }} />
             <span>
               Automated email delivery is offline or blocked by cloud firewall. <b>Please copy and share these credentials directly</b> with the user so they can sign in.
             </span>
@@ -215,7 +275,7 @@ export function CredentialsModal({
           <button
             type="button"
             className="ghost"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--ink)' }}
             onClick={() => copyToClipboard(buildAllCredentialsText(), 'all')}
           >
             {copiedKey === 'all' ? <Check size={15} color="#10B981" /> : <Copy size={15} />}
