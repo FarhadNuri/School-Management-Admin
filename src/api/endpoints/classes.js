@@ -8,12 +8,12 @@ export async function getClasses({ search = '', isActive } = {}) {
   if (isActive !== undefined && isActive !== 'All' && isActive !== '') {
     params.isActive = String(isActive);
   }
-  const raw = await api.get('/classes', { params });
+  const raw = await api.get('/academics/admin/classes', { params });
   return adaptClassesList(raw);
 }
 
 export async function getClassById(id) {
-  const raw = await api.get(`/classes/${id}`);
+  const raw = await api.get(`/academics/admin/classes/${id}`);
   return adaptClass(raw.class || raw);
 }
 
@@ -22,7 +22,7 @@ export async function addClass(data) {
   const files = { coverImage };
   const fd = buildFormData(fields, files);
 
-  const raw = await api.post('/classes', fd);
+  const raw = await api.post('/academics/admin/classes', fd);
   return adaptClass(raw.class || raw);
 }
 
@@ -31,11 +31,11 @@ export async function updateClass(id, data) {
   const files = { coverImage };
   const fd = buildFormData(fields, files);
 
-  const raw = await api.patch(`/classes/${id}`, fd);
+  const raw = await api.patch(`/academics/admin/classes/${id}`, fd);
   return adaptClass(raw.class || raw);
 }
 
 export async function deleteClass(id) {
-  const raw = await api.delete(`/classes/${id}`);
+  const raw = await api.delete(`/academics/admin/classes/${id}`);
   return raw;
 }
