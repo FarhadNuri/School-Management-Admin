@@ -2,7 +2,7 @@ import api from '../client';
 import { buildFormData } from '../formData';
 
 export async function login({ email, password }) {
-  const data = await api.post('/login', { email, password });
+  const data = await api.post('/auth/admin/login', { email, password });
   if (data?.token) {
     localStorage.setItem('admin_token', data.token);
   }
@@ -19,7 +19,7 @@ export async function logout() {
 }
 
 export async function getMe() {
-  const data = await api.get('/me');
+  const data = await api.get('/auth/admin/me');
   if (data?.admin) {
     localStorage.setItem('admin_user', JSON.stringify(data.admin));
   }
@@ -27,7 +27,7 @@ export async function getMe() {
 }
 
 export async function changePassword({ currentPassword, newPassword, confirmPassword }) {
-  return await api.patch('/me/password', {
+  return await api.patch('/auth/admin/password', {
     currentPassword,
     newPassword,
     confirmPassword,
@@ -36,7 +36,7 @@ export async function changePassword({ currentPassword, newPassword, confirmPass
 
 export async function updatePhoto(photoFile) {
   const fd = buildFormData({}, { photo: photoFile });
-  const data = await api.patch('/me/photo', fd);
+  const data = await api.patch('/auth/admin/photo', fd);
   if (data?.admin) {
     localStorage.setItem('admin_user', JSON.stringify(data.admin));
     window.dispatchEvent(new Event('admin_user_updated'));
