@@ -5,8 +5,6 @@ export async function getPayments({ search = '', status, purpose, feeType } = {}
   const params = {};
   if (search) params.search = search;
   if (status && status !== 'All') {
-    // Map chips: Paid -> paid, Pending -> unpaid, Overdue -> overdue
-    // Partial and Cancelled have no documented status in backend: load all and filter client-side
     if (status === 'Paid') params.status = 'paid';
     else if (status === 'Pending') params.status = 'unpaid';
     else if (status === 'Overdue') params.status = 'overdue';
@@ -17,12 +15,12 @@ export async function getPayments({ search = '', status, purpose, feeType } = {}
     params.feeType = feeType.toLowerCase().replace(/\s+/g, '_');
   }
 
-  const raw = await api.get('/payments', { params });
+  const raw = await api.get('/billing/admin/payments', { params });
   return adaptPaymentsList(raw);
 }
 
 export async function getPaymentById(id) {
-  const raw = await api.get(`/payments/${id}`);
+  const raw = await api.get(`/billing/admin/payments/${id}`);
   return adaptPayment(raw.payment || raw);
 }
 
@@ -36,14 +34,14 @@ export async function createInvoice(data) {
     description: data.description || data.notes || '',
   };
 
-  const raw = await api.post('/payments', payload);
+  const raw = await api.post('/billing/admin/payments', payload);
   return adaptPayment(raw.payment || raw);
 }
 
 export async function resendInvoice(id) {
-  return await api.post(`/payments/${id}/resend`);
+  return await api.post(`/billing/admin/payments/${id}/resend`);
 }
 
 export async function cancelInvoice(id) {
-  return await api.post(`/payments/${id}/cancel`);
+  return await api.post(`/billing/admin/payments/${id}/cancel`);
 }
