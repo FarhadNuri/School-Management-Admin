@@ -8,17 +8,17 @@ export async function getTeachers({ search = '', isActive } = {}) {
   if (isActive !== undefined && isActive !== 'All' && isActive !== '') {
     params.isActive = String(isActive);
   }
-  const raw = await api.get('/teachers', { params });
+  const raw = await api.get('/academics/admin/teachers', { params });
   return adaptTeachersList(raw);
 }
 
 export async function getTeacherById(id) {
-  const raw = await api.get(`/teachers/${id}`);
+  const raw = await api.get(`/academics/admin/teachers/${id}`);
   return adaptTeacher(raw.teacher || raw);
 }
 
 export async function setTeacherStatus(id, isActive) {
-  const raw = await api.patch(`/teachers/${id}/status`, { isActive });
+  const raw = await api.patch(`/academics/admin/teachers/${id}/status`, { isActive });
   return adaptTeacher(raw.teacher || raw);
 }
 
@@ -44,7 +44,7 @@ export async function addTeacher(data) {
   };
 
   const fd = buildFormData(fields, files);
-  const res = await api.post('/teachers', fd);
+  const res = await api.post('/academics/admin/teachers', fd);
   const teacher = adaptTeacher(res.teacher || res);
 
   // If Inactive was chosen, call status update since create payload does not store isActive
@@ -67,7 +67,7 @@ export async function addTeacher(data) {
 }
 
 export async function resetTeacherPassword(id) {
-  const res = await api.patch(`/teachers/${id}/reset-password`);
+  const res = await api.patch(`/academics/admin/teachers/${id}/reset-password`);
   return res;
 }
 
@@ -92,7 +92,7 @@ export async function updateTeacher(id, data) {
   };
 
   const fd = buildFormData(fields, files);
-  const res = await api.patch(`/teachers/${id}`, fd);
+  const res = await api.patch(`/academics/admin/teachers/${id}`, fd);
   return adaptTeacher(res.teacher || res);
 }
 
@@ -100,5 +100,5 @@ export async function updateTeacher(id, data) {
 export const enrollTeacher = addTeacher;
 
 export async function deleteTeacher(id) {
-  return api.delete(`/teachers/${id}`);
+  return api.delete(`/academics/admin/teachers/${id}`);
 }
