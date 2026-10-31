@@ -13,12 +13,12 @@ export async function getCourses({ search = '', courseStatus, courseType, isActi
     params.courseType = courseType;
   }
 
-  const raw = await api.get('/courses', { params });
+  const raw = await api.get('/academics/admin/courses', { params });
   return adaptCoursesList(raw);
 }
 
 export async function getCourseById(id) {
-  const raw = await api.get(`/courses/${id}`);
+  const raw = await api.get(`/academics/admin/courses/${id}`);
   return adaptCourse(raw.course || raw);
 }
 
@@ -27,7 +27,7 @@ export async function addCourse(data) {
   const files = { coverImage };
   const fd = buildFormData(fields, files);
 
-  const raw = await api.post('/courses', fd);
+  const raw = await api.post('/academics/admin/courses', fd);
   return adaptCourse(raw.course || raw);
 }
 
@@ -36,12 +36,11 @@ export async function updateCourse(id, data) {
   const files = { coverImage };
   const fd = buildFormData(fields, files);
 
-  const raw = await api.patch(`/courses/${id}`, fd);
+  const raw = await api.patch(`/academics/admin/courses/${id}`, fd);
   return adaptCourse(raw.course || raw);
 }
 
 export async function deleteCourse(id) {
-  const raw = await api.delete(`/courses/${id}`);
+  const raw = await api.delete(`/academics/admin/courses/${id}`);
   return raw;
 }
-
