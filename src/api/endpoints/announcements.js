@@ -14,18 +14,18 @@ export async function getAnnouncements({ search = '', category, severity, target
     params.targetAudience = targetAudience.toLowerCase();
   }
 
-  const raw = await api.get('/announcements', { params });
+  const raw = await api.get('/communication/admin/announcements', { params });
   return adaptAnnouncementsList(raw);
 }
 
 export async function getAnnouncementById(id) {
-  const raw = await api.get(`/announcements/${id}`);
+  const raw = await api.get(`/communication/admin/announcements/${id}`);
   return adaptAnnouncement(raw.announcement || raw);
 }
 
 export async function addAnnouncement(data) {
   if (typeof FormData !== 'undefined' && data instanceof FormData) {
-    const raw = await api.post('/announcements', data, {
+    const raw = await api.post('/communication/admin/announcements', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return adaptAnnouncement(raw.announcement || raw);
@@ -39,13 +39,13 @@ export async function addAnnouncement(data) {
     targetAudience: data.targetAudience || ['all'],
   };
 
-  const raw = await api.post('/announcements', payload);
+  const raw = await api.post('/communication/admin/announcements', payload);
   return adaptAnnouncement(raw.announcement || raw);
 }
 
 export async function updateAnnouncement(id, data) {
   if (typeof FormData !== 'undefined' && data instanceof FormData) {
-    const raw = await api.patch(`/announcements/${id}`, data, {
+    const raw = await api.patch(`/communication/admin/announcements/${id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return adaptAnnouncement(raw.announcement || raw);
@@ -55,10 +55,10 @@ export async function updateAnnouncement(id, data) {
   if (payload.category) payload.category = String(payload.category).toLowerCase();
   if (payload.severity) payload.severity = String(payload.severity).toLowerCase();
 
-  const raw = await api.patch(`/announcements/${id}`, payload);
+  const raw = await api.patch(`/communication/admin/announcements/${id}`, payload);
   return adaptAnnouncement(raw.announcement || raw);
 }
 
 export async function deleteAnnouncement(id) {
-  return api.delete(`/announcements/${id}`);
+  return api.delete(`/communication/admin/announcements/${id}`);
 }
