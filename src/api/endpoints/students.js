@@ -8,17 +8,17 @@ export async function getStudents({ search = '', isActive } = {}) {
   if (isActive !== undefined && isActive !== 'All' && isActive !== '') {
     params.isActive = String(isActive);
   }
-  const raw = await api.get('/students', { params });
+  const raw = await api.get('/academics/admin/students', { params });
   return adaptStudentsList(raw);
 }
 
 export async function getStudentById(id) {
-  const raw = await api.get(`/students/${id}`);
+  const raw = await api.get(`/academics/admin/students/${id}`);
   return adaptStudent(raw.student || raw);
 }
 
 export async function setStudentStatus(id, isActive) {
-  const raw = await api.patch(`/students/${id}/status`, { isActive });
+  const raw = await api.patch(`/academics/admin/students/${id}/status`, { isActive });
   return adaptStudent(raw.student || raw);
 }
 
@@ -43,7 +43,7 @@ export async function addStudent(data) {
   };
 
   const fd = buildFormData(fields, files);
-  const res = await api.post('/students', fd);
+  const res = await api.post('/academics/admin/students', fd);
   return {
     student: adaptStudent(res.student || res),
     credentials: res.credentials || null,
@@ -53,7 +53,7 @@ export async function addStudent(data) {
 }
 
 export async function resetStudentPassword(id) {
-  const res = await api.patch(`/students/${id}/reset-password`);
+  const res = await api.patch(`/academics/admin/students/${id}/reset-password`);
   return res;
 }
 
@@ -78,7 +78,7 @@ export async function updateStudent(id, data) {
   };
 
   const fd = buildFormData(fields, files);
-  const res = await api.patch(`/students/${id}`, fd);
+  const res = await api.patch(`/academics/admin/students/${id}`, fd);
   return adaptStudent(res.student || res);
 }
 
@@ -86,5 +86,5 @@ export async function updateStudent(id, data) {
 export const enrollStudent = addStudent;
 
 export async function deleteStudent(id) {
-  return api.delete(`/students/${id}`);
+  return api.delete(`/academics/admin/students/${id}`);
 }
