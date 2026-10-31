@@ -33,6 +33,13 @@ const ICON_MAP = {
   DollarSign,
 };
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'GOOD MORNING';
+  if (hour < 18) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
+};
+
 export function OverviewPage() {
   const admin = getCurrentUser() || {};
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -46,7 +53,7 @@ export function OverviewPage() {
     return (
       <div>
         <div className="bn">
-          <small>GOOD MORNING</small>
+          <small>{getGreeting()}</small>
           <h2>Welcome back, {firstName}</h2>
         </div>
 
@@ -105,7 +112,7 @@ export function OverviewPage() {
   return (
     <div>
       <div className="bn">
-        <small>GOOD MORNING</small>
+        <small>{getGreeting()}</small>
         <h2>Welcome back, {firstName}</h2>
       </div>
 
