@@ -2,7 +2,7 @@ import api from '../client';
 import { adaptDashboardData } from '../adapters/dashboardAdapter';
 
 export async function getDashboard() {
-  const raw = await api.get('/dashboard');
+  const raw = await api.get('/academics/admin/dashboard');
   return adaptDashboardData(raw);
 }
 
